@@ -7,6 +7,8 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -42,7 +44,7 @@ class WelcomeScreen extends StatelessWidget {
             right: 0,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: const [
                   BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -4)),
@@ -61,7 +63,7 @@ class WelcomeScreen extends StatelessWidget {
                   Text(
                     'With IloJourni, exploring Iloilo is simple. Find routes, track your budget, and enjoy the journey—one ride at a time.',
                     textAlign: TextAlign.center,
-                    style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: Colors.black54),
+                    style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: isDark ? Colors.white60 : Colors.black54),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(

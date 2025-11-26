@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/theme_service.dart';
 import '../services/auth_service.dart';
+import '../services/saved_trips_store.dart';
 import '../widgets/placeholder_image.dart';
 import 'itinerary_screen.dart';
 import 'welcome_screen.dart';
@@ -76,14 +77,78 @@ class ProfileSignedScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text('My Journeys', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600, fontSize: 15)),
           const SizedBox(height: 12),
-          InkWell(
-            onTap: () => Navigator.pushNamed(context, ItineraryScreen.route),
-            child: _JourneyItem(image: '', imageColor: const Color(0xFF4A90E2), title: 'Island Hopping', subtitle: 'September 13-18, 2025', budget: '30000 • 6 days'),
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: () => Navigator.pushNamed(context, ItineraryScreen.route),
-            child: _JourneyItem(image: '', imageColor: const Color(0xFFCD9A5B), title: 'Foodie Adventure', subtitle: 'August 19-20, 2025', budget: '1500 • 2 days'),
+          AnimatedBuilder(
+            animation: SavedTripsStore.instance,
+            builder: (context, _) {
+              final trips = SavedTripsStore.instance.trips;
+              
+              if (trips.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black12, blurRadius: 6, offset: const Offset(0, 2))],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.explore_outlined, size: 48, color: isDark ? Colors.white38 : Colors.black38),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No Journeys Yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Start planning your first adventure!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return Column(
+                children: trips.map((trip) {
+                  final colors = [
+                    const Color(0xFF4A90E2),
+                    const Color(0xFFCD9A5B),
+                    const Color(0xFF9B59B6),
+                    const Color(0xFFE74C3C),
+                    const Color(0xFF2ECC71),
+                  ];
+                  final colorIndex = trips.indexOf(trip) % colors.length;
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        ItineraryScreen.route,
+                        arguments: {
+                          'itinerary': trip.itinerary,
+                          'days': trip.itinerary.days.length,
+                        },
+                      ),
+                      child: _JourneyItem(
+                        image: trip.image,
+                        imageColor: colors[colorIndex],
+                        title: trip.title,
+                        subtitle: trip.dateRange,
+                        budget: '₱${trip.budget.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} • ${trip.itinerary.days.length} days',
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
           ),
           const SizedBox(height: 20),
           Text('Appearance', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600, fontSize: 15)),
@@ -155,6 +220,7 @@ class _StatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     Widget item(IconData icon, String label, String value) => Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -167,22 +233,31 @@ class _StatsCard extends StatelessWidget {
             ],
           ),
         );
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black12, blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          item(Icons.map_outlined, 'Trips', '7'),
-          Container(width: 1, height: 40, color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0)),
-          item(Icons.place_outlined, 'Places', '38'),
-          Container(width: 1, height: 40, color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0)),
-          item(Icons.wallet_outlined, 'Budget', '₱ 30000'),
-        ],
-      ),
+    return AnimatedBuilder(
+      animation: SavedTripsStore.instance,
+      builder: (context, _) {
+        final trips = SavedTripsStore.instance.trips;
+        final totalExpenses = trips.fold<int>(0, (sum, trip) => sum + trip.budget);
+        final totalPlaces = trips.fold<int>(0, (sum, trip) => sum + trip.itinerary.days.fold<int>(0, (daySum, day) => daySum + day.activities.where((a) => a.type == 'destination').length));
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkCard : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black12, blurRadius: 8, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            children: [
+              item(Icons.map_outlined, 'Trips', '${trips.length}'),
+              Container(width: 1, height: 40, color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0)),
+              item(Icons.place_outlined, 'Places', '$totalPlaces'),
+              Container(width: 1, height: 40, color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0)),
+              item(Icons.account_balance_wallet_outlined, 'Expenses', totalExpenses > 0 ? '₱ ${totalExpenses.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}' : '₱ 0'),
+            ],
+          ),
+        );
+      },
     );
   }
 }

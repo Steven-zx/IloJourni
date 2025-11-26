@@ -28,8 +28,10 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      appBar: AppBar(leading: BackButton(color: Colors.black87)),
+      appBar: AppBar(leading: BackButton(color: isDark ? Colors.white : Colors.black87)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -41,7 +43,7 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                   children: [
                     Text('Your Iloilo Adventure\nAwaits', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
-                    Text("Set your budget, pick your style, and we'll do the rest.", textAlign: TextAlign.center, style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: Colors.black54)),
+                    Text("Set your budget, pick your style, and we'll do the rest.", textAlign: TextAlign.center, style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: isDark ? Colors.white60 : Colors.black54)),
                   ],
                 ),
               ),
@@ -56,18 +58,18 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                   hintText: 'Enter your budget (₱)',
                   prefixText: '₱ ',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark ? AppTheme.darkBackground : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppTheme.teal, width: 2),
+                    borderSide: BorderSide(color: isDark ? AppTheme.darkTeal : AppTheme.teal, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -83,18 +85,18 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                   hintText: 'Enter number of days',
                   suffixText: 'days',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: isDark ? AppTheme.darkBackground : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: isDark ? Colors.white24 : Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppTheme.teal, width: 2),
+                    borderSide: BorderSide(color: isDark ? AppTheme.darkTeal : AppTheme.teal, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -352,6 +354,8 @@ class _StyleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
@@ -359,10 +363,10 @@ class _StyleChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.teal : Colors.white,
+          color: selected ? (isDark ? AppTheme.darkTeal : AppTheme.teal) : (isDark ? AppTheme.darkCard : Colors.white),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: selected ? AppTheme.teal : Colors.grey.shade300,
+            color: selected ? (isDark ? AppTheme.darkTeal : AppTheme.teal) : (isDark ? Colors.white24 : Colors.grey.shade300),
             width: 1.5,
           ),
         ),
@@ -372,13 +376,13 @@ class _StyleChip extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: selected ? Colors.white : Colors.black87,
+              color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
+                color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
