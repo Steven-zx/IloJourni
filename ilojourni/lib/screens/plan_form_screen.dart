@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/gemini_service.dart';
+import '../services/connectivity_service.dart';
 import 'itinerary_screen.dart';
 
 class PlanFormScreen extends StatefulWidget {
@@ -180,6 +181,26 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
   }
 
   Future<void> _generateItinerary() async {
+    // Check internet connectivity first
+    if (ConnectivityService.instance.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.cloud_off, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('No internet connection. AI generation requires internet.'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade700,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final budget = _budgetController.text.trim();
     final daysText = _daysController.text.trim();
     

@@ -46,7 +46,7 @@ class GeminiService {
     while (attempts < maxRetries) {
       try {
         attempts++;
-        print('🤖 Attempt $attempts/$maxRetries: Sending request to Gemini AI...');
+        // print('🤖 Attempt $attempts/$maxRetries: Sending request to Gemini AI...');
         
         final destinationsJson = DestinationsDatabase.allDestinations
             .map((d) => d.toJson())
@@ -65,7 +65,7 @@ class GeminiService {
           throw Exception('Empty response from Gemini AI');
         }
 
-        print('✅ Received response from Gemini AI (${response.text!.length} characters)');
+        // print('✅ Received response from Gemini AI (${response.text!.length} characters)');
 
         // Parse the JSON response
         final jsonResponse = _extractJson(response.text!);
@@ -79,18 +79,18 @@ class GeminiService {
           throw Exception('Generated itinerary has no days');
         }
 
-        print('✅ Successfully generated itinerary with ${itinerary.days.length} days');
+        // print('✅ Successfully generated itinerary with ${itinerary.days.length} days');
         return itinerary;
         
       } on FormatException catch (e) {
         lastError = Exception('Failed to parse AI response: ${e.message}');
-        print('❌ JSON parsing error on attempt $attempts: $e');
+        // print('❌ JSON parsing error on attempt $attempts: $e');
         if (attempts < maxRetries) {
           await Future.delayed(Duration(seconds: attempts * 2));
         }
       } catch (e) {
         lastError = e is Exception ? e : Exception(e.toString());
-        print('❌ Error on attempt $attempts: $e');
+        // print('❌ Error on attempt $attempts: $e');
         
         // Don't retry for certain errors
         if (e.toString().contains('API key') || e.toString().contains('quota')) {
@@ -98,7 +98,7 @@ class GeminiService {
         }
         
         if (attempts < maxRetries) {
-          print('⏳ Retrying in ${attempts * 2} seconds...');
+          // print('⏳ Retrying in ${attempts * 2} seconds...');
           await Future.delayed(Duration(seconds: attempts * 2));
         }
       }
@@ -228,12 +228,12 @@ REMEMBER:
     int endIndex = cleanText.lastIndexOf('}');
     
     if (startIndex == -1) {
-      print('No opening brace found in response');
+      // print('No opening brace found in response');
       throw FormatException('Invalid JSON response from AI - no opening brace');
     }
     
     if (endIndex == -1 || endIndex <= startIndex) {
-      print('No closing brace found, response likely truncated');
+      // print('No closing brace found, response likely truncated');
       throw FormatException('Invalid JSON response from AI - response truncated');
     }
 
@@ -249,7 +249,7 @@ REMEMBER:
       
       return parsed;
     } catch (e) {
-      print('Failed to parse JSON: $cleanText');
+      // print('Failed to parse JSON: $cleanText');
       throw Exception('Failed to parse AI response: $e');
     }
   }

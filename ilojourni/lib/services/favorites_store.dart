@@ -65,9 +65,9 @@ class FavoritesStore extends ChangeNotifier {
         notifyListeners();
       }
       _isInitialized = true;
-      print('✅ Loaded ${_favorites.length} favorite destinations');
+      // print('✅ Loaded ${_favorites.length} favorite destinations');
     } catch (e) {
-      print('❌ Error loading favorites: $e');
+      // print('❌ Error loading favorites: $e');
       _isInitialized = true;
     }
   }
@@ -79,7 +79,7 @@ class FavoritesStore extends ChangeNotifier {
           json.encode(_favorites.map((f) => f.toJson()).toList());
       await prefs.setString(_storageKey, favoritesJson);
     } catch (e) {
-      print('❌ Error saving favorites: $e');
+      // print('❌ Error saving favorites: $e');
     }
   }
 
@@ -93,11 +93,11 @@ class FavoritesStore extends ChangeNotifier {
     if (index != -1) {
       // Remove from favorites
       _favorites.removeAt(index);
-      print('💔 Removed ${destination.name} from favorites');
+      // print('💔 Removed ${destination.name} from favorites');
     } else {
       // Add to favorites
       _favorites.add(destination);
-      print('❤️ Added ${destination.name} to favorites');
+      // print('❤️ Added ${destination.name} to favorites');
     }
 
     notifyListeners();
@@ -109,7 +109,7 @@ class FavoritesStore extends ChangeNotifier {
       _favorites.add(destination);
       notifyListeners();
       await _saveToStorage();
-      print('❤️ Added ${destination.name} to favorites');
+      // print('❤️ Added ${destination.name} to favorites');
     }
   }
 
@@ -119,7 +119,7 @@ class FavoritesStore extends ChangeNotifier {
     if (_favorites.length < initialLength) {
       notifyListeners();
       await _saveToStorage();
-      print('💔 Removed favorite');
+      // print('💔 Removed favorite');
     }
   }
 
@@ -127,7 +127,7 @@ class FavoritesStore extends ChangeNotifier {
     _favorites.clear();
     notifyListeners();
     await _saveToStorage();
-    print('🗑️ Cleared all favorites');
+    // print('🗑️ Cleared all favorites');
   }
 
   List<FavoriteDestination> getFavoritesByTag(String tag) {

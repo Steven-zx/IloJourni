@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/theme_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/placeholder_image.dart';
 import 'itinerary_screen.dart';
+import 'welcome_screen.dart';
 
 class ProfileSignedScreen extends StatelessWidget {
   const ProfileSignedScreen({super.key});
@@ -11,6 +13,8 @@ class ProfileSignedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = AuthService.instance.currentUser;
+    
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFE9E9E9).withValues(alpha: 0.3),
       body: SafeArea(
@@ -32,15 +36,15 @@ class ProfileSignedScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppTheme.teal, width: 3),
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.white,
-                      child: ClipOval(
-                        child: PlaceholderImage(
-                          height: 100,
-                          width: 100,
-                          label: '',
-                          color: Color(0xFFE0E0E0),
+                      child: Text(
+                        user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.darkTeal : AppTheme.navy,
                         ),
                       ),
                     ),
@@ -49,10 +53,20 @@ class ProfileSignedScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
-                'Philip Hamilton',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                user?.fullName ?? 'User',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                user?.email ?? '',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -75,6 +89,61 @@ class ProfileSignedScreen extends StatelessWidget {
           Text('Appearance', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600, fontSize: 15)),
           const SizedBox(height: 12),
           _AppearanceRow(),
+          const SizedBox(height: 20),
+          Text('Account', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600, fontSize: 15)),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkCard : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black12, blurRadius: 4, offset: const Offset(0, 2))],
+            ),
+            child: InkWell(
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Sign Out'),
+                    content: const Text('Are you sure you want to sign out?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Sign Out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await AuthService.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      WelcomeScreen.route,
+                      (route) => false,
+                    );
+                  }
+                }
+              },
+              child: Row(
+                children: [
+                  Icon(Icons.logout, size: 24, color: Colors.red),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Sign Out',
+                      style: TextStyle(fontSize: 15, color: Colors.red),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: isDark ? Colors.white38 : Colors.black38),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       ),

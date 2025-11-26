@@ -728,16 +728,16 @@ class _DestinationCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          print('Card tapped! ID: ${destination.id}, Has details: $hasDetails');
+          // print('Card tapped! ID: ${destination.id}, Has details: $hasDetails');
           if (hasDetails) {
-            print('Navigating to MoreInfoScreen with ID: ${destination.id}');
+            // print('Navigating to MoreInfoScreen with ID: ${destination.id}');
             Navigator.pushNamed(
               context,
               MoreInfoScreen.route,
               arguments: destination.id,
             );
           } else {
-            print('Showing snackbar for: ${destination.name}');
+            // print('Showing snackbar for: ${destination.name}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Full details for ${destination.name} coming soon!'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_state.dart';
+import '../widgets/offline_banner.dart';
 import 'dashboard_screen.dart';
 import 'explore_screen.dart';
 import 'saved_trips_screen.dart';
@@ -32,7 +33,12 @@ class _HomeShellState extends State<HomeShell> {
     ];
 
     return Scaffold(
-      body: pages[_index],
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: pages[_index]),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

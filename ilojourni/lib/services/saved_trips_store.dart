@@ -10,13 +10,17 @@ class SavedTrip {
     required this.budget,
     required this.image,
     required this.itinerary,
-  });
+    this.isOfflineAvailable = true,
+    DateTime? savedAt,
+  }) : savedAt = savedAt ?? DateTime.now();
   
   final String title;
   final String dateRange;
   final int budget;
   final String image;
   final GeneratedItinerary itinerary;
+  final bool isOfflineAvailable;
+  final DateTime savedAt;
 
   Map<String, dynamic> toJson() => {
     'title': title,
@@ -24,6 +28,8 @@ class SavedTrip {
     'budget': budget,
     'image': image,
     'itinerary': itinerary.toJson(),
+    'isOfflineAvailable': isOfflineAvailable,
+    'savedAt': savedAt.toIso8601String(),
   };
 
   factory SavedTrip.fromJson(Map<String, dynamic> json) => SavedTrip(
@@ -32,6 +38,10 @@ class SavedTrip {
     budget: json['budget'] as int,
     image: json['image'] as String,
     itinerary: GeneratedItinerary.fromJson(json['itinerary'] as Map<String, dynamic>),
+    isOfflineAvailable: json['isOfflineAvailable'] as bool? ?? true,
+    savedAt: json['savedAt'] != null 
+        ? DateTime.parse(json['savedAt'] as String)
+        : DateTime.now(),
   );
 }
 
@@ -61,7 +71,7 @@ class SavedTripsStore extends ChangeNotifier {
       }
       _isInitialized = true;
     } catch (e) {
-      print('Error loading saved trips: $e');
+      // print('Error loading saved trips: $e');
     }
   }
 
@@ -71,7 +81,7 @@ class SavedTripsStore extends ChangeNotifier {
       final String tripsJson = json.encode(_trips.map((trip) => trip.toJson()).toList());
       await prefs.setString(_storageKey, tripsJson);
     } catch (e) {
-      print('Error saving trips: $e');
+      // print('Error saving trips: $e');
     }
   }
 

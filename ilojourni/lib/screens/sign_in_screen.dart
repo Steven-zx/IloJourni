@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/auth_state.dart';
+import '../services/auth_service.dart';
 import 'sign_up_screen.dart';
 import 'home_shell.dart';
 
@@ -16,12 +16,50 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _pwdCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSignIn() async {
+    if (_emailCtrl.text.trim().isEmpty || _pwdCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await AuthService.instance.signIn(
+      email: _emailCtrl.text.trim(),
+      password: _pwdCtrl.text,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result['success']) {
+      Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -81,21 +119,17 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: () {
-                  if (_emailCtrl.text.trim().isEmpty || _pwdCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter email and password')),
-                    );
-                    return;
-                  }
-                  // Simulate sign in success
-                  AuthState.signIn();
-                  Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signed in successfully!'), backgroundColor: AppTheme.teal),
-                  );
-                },
-                child: const Text('Sign in'),
+                onPressed: _isLoading ? null : _handleSignIn,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Sign in'),
               ),
               const SizedBox(height: 12),
               Center(

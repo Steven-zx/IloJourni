@@ -19,12 +19,16 @@ import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
 import 'services/saved_trips_store.dart';
 import 'services/favorites_store.dart';
+import 'services/connectivity_service.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await SavedTripsStore.instance.initialize();
   await FavoritesStore.instance.initialize();
+  await ConnectivityService.instance.initialize();
+  await AuthService.instance.initialize();
   runApp(const MyApp());
 }
 

@@ -1,13 +1,14 @@
+import 'auth_service.dart';
+
 class AuthState {
-  static bool _isSignedIn = false;
-  
-  static bool get isSignedIn => _isSignedIn;
+  static bool get isSignedIn => AuthService.instance.isAuthenticated;
+  static User? get currentUser => AuthService.instance.currentUser;
   
   static void signIn() {
-    _isSignedIn = true;
+    // Kept for backwards compatibility, but actual sign in happens through AuthService
   }
   
   static void signOut() {
-    _isSignedIn = false;
+    AuthService.instance.signOut();
   }
 }

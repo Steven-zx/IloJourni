@@ -1,8 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/auth_state.dart';
+import '../services/auth_service.dart';
 import 'sign_in_screen.dart';
+import 'home_shell.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -16,6 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -23,6 +25,44 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailCtrl.dispose();
     _pwdCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
+    if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty || _pwdCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await AuthService.instance.signUp(
+      fullName: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      password: _pwdCtrl.text,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result['success']) {
+      Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -91,21 +131,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: () {
-                  if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty || _pwdCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please fill all fields')),
-                    );
-                    return;
-                  }
-                  // Simulate sign up success
-                  AuthState.signIn();
-                  Navigator.pushReplacementNamed(context, '/home');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Account created successfully!'), backgroundColor: AppTheme.teal),
-                  );
-                },
-                child: const Text('Sign up'),
+                onPressed: _isLoading ? null : _handleSignUp,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Sign up'),
               ),
               const SizedBox(height: 12),
               Center(
