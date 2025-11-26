@@ -178,6 +178,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                       dateRange: _generateDateRange(days),
                       budget: itinerary.totalCost,
                       image: '',
+                      itinerary: itinerary,
                     ));
                     Navigator.popUntil(context, (route) => route.settings.name == '/home');
                     ScaffoldMessenger.of(context).showSnackBar(

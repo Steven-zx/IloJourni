@@ -1,19 +1,29 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/destination.dart';
 
 class SavedTrip {
-  SavedTrip({required this.title, required this.dateRange, required this.budget, required this.image});
+  SavedTrip({
+    required this.title,
+    required this.dateRange,
+    required this.budget,
+    required this.image,
+    required this.itinerary,
+  });
+  
   final String title;
   final String dateRange;
   final int budget;
   final String image;
+  final GeneratedItinerary itinerary;
 
   Map<String, dynamic> toJson() => {
     'title': title,
     'dateRange': dateRange,
     'budget': budget,
     'image': image,
+    'itinerary': itinerary.toJson(),
   };
 
   factory SavedTrip.fromJson(Map<String, dynamic> json) => SavedTrip(
@@ -21,6 +31,7 @@ class SavedTrip {
     dateRange: json['dateRange'] as String,
     budget: json['budget'] as int,
     image: json['image'] as String,
+    itinerary: GeneratedItinerary.fromJson(json['itinerary'] as Map<String, dynamic>),
   );
 }
 
