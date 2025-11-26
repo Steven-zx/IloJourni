@@ -44,66 +44,89 @@ class _SavedTripsScreenState extends State<SavedTripsScreen> {
         backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       ),
       body: hasTrips
-          ? Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Text(
-                      'Here are your saved trips',
-                      style: TextStyle(
-                        color: isDark ? Colors.white60 : Colors.grey[600],
-                        fontSize: 14,
+          ? RefreshIndicator(
+              onRefresh: () async {
+                await Future.delayed(const Duration(milliseconds: 500));
+                setState(() {});
+              },
+              color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        'Here are your saved trips',
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.grey[600],
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: SavedTripsStore.instance.trips.length,
-                      itemBuilder: (context, index) {
-                        final t = SavedTripsStore.instance.trips[index];
-                        return _TripCard(
-                          title: t.title,
-                          date: t.dateRange,
-                          budget: t.budget,
-                          image: t.image,
-                          status: index == 0 ? 'Upcoming' : (index == 1 ? 'Completed' : 'Draft'),
-                          days: 3,
-                          spots: 6,
-                          onOpen: () => Navigator.pushNamed(context, TripDetailScreen.route),
-                          onDelete: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete Trip?'),
-                                content: const Text('This action cannot be undone.'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.teal,
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: SavedTripsStore.instance.trips.length,
+                        itemBuilder: (context, index) {
+                          final t = SavedTripsStore.instance.trips[index];
+                          return _TripCard(
+                            trip: t,
+                            onOpen: () {
+                              Navigator.pushNamed(
+                                context,
+                                TripDetailScreen.route,
+                                arguments: t,
+                              );
+                            },
+                            onDelete: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: isDark ? AppTheme.darkCard : Colors.white,
+                                  title: Text(
+                                    'Delete Trip?',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black,
                                     ),
-                                    child: const Text('Delete'),
                                   ),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              setState(() => SavedTripsStore.removeAt(index));
-                            }
-                          },
-                          isDark: isDark,
-                        );
-                      },
+                                  content: Text(
+                                    'This action cannot be undone.',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : Colors.black87,
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await SavedTripsStore.instance.removeAt(index);
+                              }
+                            },
+                            isDark: isDark,
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             )
           : Center(
@@ -300,42 +323,30 @@ class _SavedTripsScreenState extends State<SavedTripsScreen> {
 
 class _TripCard extends StatelessWidget {
   const _TripCard({
-    required this.title,
-    required this.date,
-    required this.budget,
-    required this.image,
-    required this.status,
-    required this.days,
-    required this.spots,
+    required this.trip,
     required this.onOpen,
     required this.onDelete,
     required this.isDark,
   });
 
-  final String title;
-  final String date;
-  final int budget;
-  final String image;
-  final String status;
-  final int days;
-  final int spots;
+  final SavedTrip trip;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
   final bool isDark;
 
   Color _getStatusColor() {
-    switch (status) {
-      case 'Upcoming':
-        return const Color(0xFF2196F3);
-      case 'Completed':
-        return const Color(0xFF4CAF50);
-      case 'Draft':
-      default:
-        return const Color(0xFF9E9E9E);
-    }
+    // You can enhance this later with actual status tracking
+    return const Color(0xFF2196F3); // Upcoming color
   }
+
   @override
   Widget build(BuildContext context) {
+    final days = trip.itinerary.days.length;
+    final activities = trip.itinerary.days
+        .expand((day) => day.activities)
+        .where((a) => a.type == 'destination')
+        .length;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -356,13 +367,29 @@ class _TripCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: PlaceholderImage(
-                  height: 150,
-                  width: double.infinity,
-                  label: title,
-                  color: const Color(0xFF4A90E2),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                ),
+                child: trip.itinerary.days.first.activities.any((a) => a.image?.isNotEmpty == true)
+                    ? Image.asset(
+                        trip.itinerary.days.first.activities
+                            .firstWhere((a) => a.image?.isNotEmpty == true)
+                            .image!,
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => PlaceholderImage(
+                          height: 150,
+                          width: double.infinity,
+                          label: trip.title,
+                          color: const Color(0xFF4A90E2),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                      )
+                    : PlaceholderImage(
+                        height: 150,
+                        width: double.infinity,
+                        label: trip.title,
+                        color: const Color(0xFF4A90E2),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
               ),
               Positioned(
                 top: 12,
@@ -373,9 +400,9 @@ class _TripCard extends StatelessWidget {
                     color: _getStatusColor(),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    status,
-                    style: const TextStyle(
+                  child: const Text(
+                    'Saved',
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -424,7 +451,7 @@ class _TripCard extends StatelessWidget {
                       const Icon(Icons.place_outlined, size: 14, color: Colors.black87),
                       const SizedBox(width: 4),
                       Text(
-                        '$spots spots',
+                        '$activities spots',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -443,12 +470,14 @@ class _TripCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  trip.title,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -461,7 +490,7 @@ class _TripCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        date,
+                        trip.dateRange,
                         style: TextStyle(
                           fontSize: 13,
                           color: isDark ? Colors.white60 : Colors.grey[700],
@@ -477,7 +506,7 @@ class _TripCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '₱ $budget',
+                      '₱${trip.itinerary.totalCost}',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -505,29 +534,6 @@ class _TripCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppTheme.darkTeal.withOpacity(0.2)
-                            : AppTheme.teal.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Downloaded: $title'),
-                              backgroundColor: AppTheme.teal,
-                            ),
-                          );
-                        },
-                        icon: Icon(
-                          Icons.file_download_outlined,
-                          color: isDark ? AppTheme.darkTeal : AppTheme.teal,
                         ),
                       ),
                     ),
