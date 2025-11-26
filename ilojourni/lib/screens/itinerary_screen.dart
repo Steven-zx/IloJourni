@@ -75,7 +75,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
           const SizedBox(height: 16),
           // Day filter chips
           SizedBox(
-            height: 50,
+            height: 44,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
@@ -243,14 +243,14 @@ class _DayChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
               : (isDark ? AppTheme.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
@@ -265,6 +265,7 @@ class _DayChip extends StatelessWidget {
                 ? Colors.white
                 : (isDark ? Colors.white : Colors.black87),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 15,
           ),
         ),
       ),

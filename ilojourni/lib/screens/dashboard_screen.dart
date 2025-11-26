@@ -10,6 +10,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final TextEditingController _searchController = TextEditingController();
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -46,6 +47,7 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     // Search bar
                     TextField(
+                      controller: _searchController,
                       decoration: InputDecoration(
                         hintText: 'Search destinations...',
                         hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey[400]),
@@ -59,6 +61,17 @@ class DashboardScreen extends StatelessWidget {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                       style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      onSubmitted: (query) {
+                        if (query.isNotEmpty) {
+                          Navigator.of(context).pushNamed(
+                            '/home',
+                            arguments: {
+                              'tab': 1,
+                              'search': query,
+                            },
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 20),
                     // White card with title and buttons

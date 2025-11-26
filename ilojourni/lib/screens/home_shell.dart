@@ -18,15 +18,32 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+  String? _searchQuery;
+
+  @override
+  void initState() {
+    super.initState();
+    final args = WidgetsBinding.instance.platformDispatcher.onError == null
+      ? null
+      : (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?);
+    if (args != null) {
+      if (args['tab'] != null && args['tab'] is int) {
+        _index = args['tab'] as int;
+      }
+      if (args['search'] != null && args['search'] is String) {
+        _searchQuery = args['search'] as String;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final pages = <Widget>[
       const DashboardScreen(),
-      const ExploreScreen(),
+      ExploreScreen(initialQuery: _searchQuery),
       const SavedTripsScreen(),
-      const FavoritesScreen(),
       Builder(
         builder: (context) => AuthState.isSignedIn ? const ProfileSignedScreen() : const ProfileGuestScreen(),
       ),
@@ -41,7 +58,10 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) => setState(() {
+          _index = i;
+          if (i != 1) _searchQuery = null;
+        }),
         backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shadowColor: isDark ? Colors.black26 : Colors.black12,
         elevation: 3,
@@ -60,11 +80,6 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Saved',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Favorites',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

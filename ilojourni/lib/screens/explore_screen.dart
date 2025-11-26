@@ -4,7 +4,8 @@ import '../services/favorites_store.dart';
 import 'more_info_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key});
+  final String? initialQuery;
+  const ExploreScreen({super.key, this.initialQuery});
   static const route = '/explore';
 
   @override
@@ -13,9 +14,28 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   String _searchQuery = '';
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchQuery = widget.initialQuery ?? '';
+    _searchController = TextEditingController(text: _searchQuery);
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
   String _selectedCategory = 'All';
 
-  final List<String> _categories = ['All', 'Popular', 'Adventure', 'Culture', 'Nature', 'Foodie'];
+  final List<String> _categories = ['All', 'Favorites', 'Popular', 'Adventure', 'Culture', 'Nature', 'Foodie'];
 
   final List<DestinationItem> _allDestinations = [
     DestinationItem(
@@ -134,8 +154,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     // Filter by category
     if (_selectedCategory != 'All') {
-      if (_selectedCategory == 'Popular') {
-        // Show first 5 as popular
+      if (_selectedCategory == 'Favorites') {
+        final favoriteIds = FavoritesStore.instance.favorites.map((f) => f.id).toSet();
+        results = results.where((dest) => favoriteIds.contains(dest.id)).toList();
+      } else if (_selectedCategory == 'Popular') {
         results = results.take(5).toList();
       } else {
         results = results.where((dest) {
@@ -176,7 +198,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   const SizedBox(height: 16),
                   // Search bar
                   TextField(
-                    onChanged: (value) => setState(() => _searchQuery = value),
+                    controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Search destinations...',
                       hintStyle: TextStyle(
