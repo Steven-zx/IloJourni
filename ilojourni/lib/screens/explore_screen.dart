@@ -19,13 +19,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
-    _searchQuery = widget.initialQuery ?? '';
-    _searchController = TextEditingController(text: _searchQuery);
+    _searchController = TextEditingController();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
       });
     });
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+      _searchQuery = widget.initialQuery!;
+    }
   }
 
   @override

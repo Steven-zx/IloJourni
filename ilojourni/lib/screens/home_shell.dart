@@ -20,19 +20,22 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   String? _searchQuery;
 
+  bool _didSetArgs = false;
+
   @override
-  void initState() {
-    super.initState();
-    final args = WidgetsBinding.instance.platformDispatcher.onError == null
-      ? null
-      : (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?);
-    if (args != null) {
-      if (args['tab'] != null && args['tab'] is int) {
-        _index = args['tab'] as int;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didSetArgs) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        if (args['tab'] != null && args['tab'] is int) {
+          _index = args['tab'] as int;
+        }
+        if (args['search'] != null && args['search'] is String) {
+          _searchQuery = args['search'] as String;
+        }
       }
-      if (args['search'] != null && args['search'] is String) {
-        _searchQuery = args['search'] as String;
-      }
+      _didSetArgs = true;
     }
   }
 

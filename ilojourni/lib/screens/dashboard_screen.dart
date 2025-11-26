@@ -4,13 +4,31 @@ import 'plan_form_screen.dart';
 import 'more_info_screen.dart';
 import 'manual_itinerary_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final TextEditingController _searchController = TextEditingController();
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -61,8 +79,10 @@ class DashboardScreen extends StatelessWidget {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                       style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         if (query.isNotEmpty) {
+                          FocusScope.of(context).unfocus();
                           Navigator.of(context).pushNamed(
                             '/home',
                             arguments: {

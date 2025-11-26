@@ -48,7 +48,7 @@ class _ProfileGuestScreenState extends State<ProfileGuestScreen> {
                       children: [
                         const Text('Guest User', style: TextStyle(fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        const Text('Sign in to save your trips across devices', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                        const Text('No personal details available in guest mode.', style: TextStyle(fontSize: 12, color: Colors.black54)),
                         const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,

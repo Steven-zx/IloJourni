@@ -48,6 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!mounted) return;
 
     if (result['success']) {
+      await AuthService.instance.initialize();
       Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
