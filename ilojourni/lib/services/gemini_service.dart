@@ -15,13 +15,13 @@ class GeminiService {
     }
     
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.7,
-        topK: 40,
+        topK: 64,
         topP: 0.95,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 16384,
       ),
     );
   }
@@ -65,10 +65,13 @@ class GeminiService {
           throw Exception('Empty response from Gemini AI');
         }
 
-        print('✅ Received response from Gemini AI');
+        print('✅ Received response from Gemini AI (${response.text!.length} characters)');
 
         // Parse the JSON response
         final jsonResponse = _extractJson(response.text!);
+        if (jsonResponse.isEmpty) {
+          throw FormatException('No valid JSON found in response');
+        }
         final itinerary = GeneratedItinerary.fromJson(jsonResponse);
 
         // Validate the itinerary
@@ -142,8 +145,9 @@ CRITICAL PLANNING RULES:
 6. **Budget smart**: Total cost should be 90-100% of budget. Don't go over!
 7. **Activity mix**: Balance based on travel styles - if "Foodie" is selected, include more food stops
 8. **Opening hours**: Respect the openingHours in destination data
-9. **Pacing**: Don't cram too much. $days day${days > 1 ? 's' : ''} = ${days * 4}-${days * 6} activities max
+9. **Pacing**: Keep it simple! For ${days} days = ${days * 4}-${days * 5} activities MAXIMUM
 10. **Image paths**: Use the exact "image" field from destination JSON
+11. **BE CONCISE**: Keep descriptions SHORT (1 sentence max) to avoid truncation
 
 OUTPUT FORMAT (MUST BE VALID JSON):
 {
@@ -204,9 +208,11 @@ EXAMPLE ACTIVITY ORDER FOR 1 DAY:
 
 REMEMBER:
 - Return ONLY the JSON object, no markdown, no extra text
+- Keep descriptions to 1 SHORT sentence each
 - All costs must be realistic integers
 - Times must be sequential and realistic
 - Use actual destination data - don't make up places!
+- COMPLETE ALL ${days} DAYS - don't stop mid-response
 ''';
   }
 
@@ -219,16 +225,29 @@ REMEMBER:
 
     // Find the first { and last }
     final startIndex = cleanText.indexOf('{');
-    final endIndex = cleanText.lastIndexOf('}');
+    int endIndex = cleanText.lastIndexOf('}');
     
-    if (startIndex == -1 || endIndex == -1) {
-      throw Exception('Invalid JSON response from AI');
+    if (startIndex == -1) {
+      print('No opening brace found in response');
+      throw FormatException('Invalid JSON response from AI - no opening brace');
+    }
+    
+    if (endIndex == -1 || endIndex <= startIndex) {
+      print('No closing brace found, response likely truncated');
+      throw FormatException('Invalid JSON response from AI - response truncated');
     }
 
     cleanText = cleanText.substring(startIndex, endIndex + 1);
     
     try {
-      return json.decode(cleanText) as Map<String, dynamic>;
+      final parsed = json.decode(cleanText) as Map<String, dynamic>;
+      
+      // Validate required fields
+      if (!parsed.containsKey('days') || (parsed['days'] as List).isEmpty) {
+        throw FormatException('JSON missing days array');
+      }
+      
+      return parsed;
     } catch (e) {
       print('Failed to parse JSON: $cleanText');
       throw Exception('Failed to parse AI response: $e');
