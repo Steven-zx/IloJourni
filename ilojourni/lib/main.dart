@@ -12,6 +12,8 @@ import 'screens/more_info_screen.dart';
 import 'screens/profile_guest_screen.dart';
 import 'screens/profile_signed_screen.dart';
 import 'screens/manual_itinerary_screen.dart';
+import 'screens/trip_detail_screen.dart';
+import 'screens/trip_budget_tracker_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
 
@@ -67,6 +69,8 @@ class _MyAppState extends State<MyApp> {
         ProfileGuestScreen.route: (_) => const ProfileGuestScreen(),
         ProfileSignedScreen.route: (_) => const ProfileSignedScreen(),
         ManualItineraryScreen.route: (_) => const ManualItineraryScreen(),
+        TripDetailScreen.route: (_) => const TripDetailScreen(),
+        TripBudgetTrackerScreen.route: (_) => const TripBudgetTrackerScreen(),
       },
     );
   }

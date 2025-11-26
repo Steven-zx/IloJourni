@@ -12,31 +12,18 @@ class PlanFormScreen extends StatefulWidget {
 }
 
 class _PlanFormScreenState extends State<PlanFormScreen> {
-  final _budgetCtrl = TextEditingController();
-  final _daysCtrl = TextEditingController();
+  String? _selectedBudget;
+  int? _selectedDays;
   final Set<String> _styles = {};
 
-  @override
-  void dispose() {
-    _budgetCtrl.dispose();
-    _daysCtrl.dispose();
-    super.dispose();
-  }
+  final List<String> _budgetOptions = [
+    '₱1,000 - ₱3,000',
+    '₱3,000 - ₱5,000',
+    '₱5,000 - ₱10,000',
+    '₱10,000+',
+  ];
 
-  String _formatDuration(int days) {
-    if (days < 7) return '$days ${days == 1 ? "Day" : "Days"}';
-    
-    final months = days ~/ 30;
-    final weeks = (days % 30) ~/ 7;
-    final remainingDays = days % 7;
-    
-    final parts = <String>[];
-    if (months > 0) parts.add('$months ${months == 1 ? "Month" : "Months"}');
-    if (weeks > 0) parts.add('$weeks ${weeks == 1 ? "Week" : "Weeks"}');
-    if (remainingDays > 0) parts.add('$remainingDays ${remainingDays == 1 ? "Day" : "Days"}');
-    
-    return parts.join(' and ');
-  }
+  final List<int> _daysOptions = [1, 2, 3, 4, 5, 6, 7];
 
   @override
   Widget build(BuildContext context) {
@@ -57,48 +44,57 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Text('Budget', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              TextField(
-                controller: _budgetCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.account_balance_wallet),
-                  prefixText: '₱ ',
-                  hintText: 'Enter your budget',
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButton<String>(
+                  value: _selectedBudget,
+                  hint: const Text('Select budget range'),
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  items: _budgetOptions.map((budget) {
+                    return DropdownMenuItem<String>(
+                      value: budget,
+                      child: Text(budget),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedBudget = value),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text('Number of Days', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              TextField(
-                controller: _daysCtrl,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.event),
-                  hintText: 'Enter number of days',
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                onChanged: (value) {
-                  if (value.isNotEmpty) {
-                    final days = int.tryParse(value);
-                    if (days != null && days > 0) {
-                      setState(() {});
-                    }
-                  }
-                },
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButton<int>(
+                  value: _selectedDays,
+                  hint: const Text('Select number of days'),
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  items: _daysOptions.map((days) {
+                    return DropdownMenuItem<int>(
+                      value: days,
+                      child: Text('$days ${days == 1 ? "Day" : "Days"}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => _selectedDays = value),
+                ),
               ),
-              if (_daysCtrl.text.isNotEmpty && int.tryParse(_daysCtrl.text) != null && int.parse(_daysCtrl.text) > 0)
-                Padding(
-                  padding: const EdgeInsets.only(left: 48, top: 6),
-                  child: Text(
-                    _formatDuration(int.parse(_daysCtrl.text)),
-                    style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(color: AppTheme.teal, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text('Travel Style', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               Wrap(
@@ -107,43 +103,43 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                 children: [
                   _StyleChip(
                     label: 'Culture',
-                    icon: Icons.location_city,
+                    icon: Icons.account_balance,
                     selected: _styles.contains('Culture'),
                     onTap: () => setState(() => _styles.contains('Culture') ? _styles.remove('Culture') : _styles.add('Culture')),
                   ),
                   _StyleChip(
                     label: 'Nature',
-                    icon: Icons.eco,
+                    icon: Icons.park_outlined,
                     selected: _styles.contains('Nature'),
                     onTap: () => setState(() => _styles.contains('Nature') ? _styles.remove('Nature') : _styles.add('Nature')),
                   ),
                   _StyleChip(
                     label: 'Foodie',
-                    icon: Icons.restaurant,
+                    icon: Icons.restaurant_outlined,
                     selected: _styles.contains('Foodie'),
                     onTap: () => setState(() => _styles.contains('Foodie') ? _styles.remove('Foodie') : _styles.add('Foodie')),
                   ),
                   _StyleChip(
                     label: 'Arts',
-                    icon: Icons.palette,
+                    icon: Icons.brush_outlined,
                     selected: _styles.contains('Arts'),
                     onTap: () => setState(() => _styles.contains('Arts') ? _styles.remove('Arts') : _styles.add('Arts')),
                   ),
                   _StyleChip(
                     label: 'Adventure',
-                    icon: Icons.hiking,
+                    icon: Icons.terrain,
                     selected: _styles.contains('Adventure'),
                     onTap: () => setState(() => _styles.contains('Adventure') ? _styles.remove('Adventure') : _styles.add('Adventure')),
                   ),
                   _StyleChip(
                     label: 'Chill',
-                    icon: Icons.local_cafe,
+                    icon: Icons.coffee_outlined,
                     selected: _styles.contains('Chill'),
                     onTap: () => setState(() => _styles.contains('Chill') ? _styles.remove('Chill') : _styles.add('Chill')),
                   ),
                   _StyleChip(
                     label: 'Budget',
-                    icon: Icons.savings,
+                    icon: Icons.savings_outlined,
                     selected: _styles.contains('Budget'),
                     onTap: () => setState(() => _styles.contains('Budget') ? _styles.remove('Budget') : _styles.add('Budget')),
                   ),
@@ -154,17 +150,9 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (_budgetCtrl.text.isEmpty || _daysCtrl.text.isEmpty) {
+                    if (_selectedBudget == null || _selectedDays == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter budget and days')),
-                      );
-                      return;
-                    }
-                    final budget = int.tryParse(_budgetCtrl.text);
-                    final days = int.tryParse(_daysCtrl.text);
-                    if (budget == null || budget <= 0 || days == null || days <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter valid budget and days')),
+                        const SnackBar(content: Text('Please select budget and number of days')),
                       );
                       return;
                     }
@@ -174,10 +162,23 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
                       );
                       return;
                     }
-                    Navigator.pushNamed(context, ItineraryScreen.route);
+                    Navigator.pushNamed(
+                      context,
+                      ItineraryScreen.route,
+                      arguments: {
+                        'budget': _selectedBudget,
+                        'days': _selectedDays,
+                        'styles': _styles.toList(),
+                      },
+                    );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.teal, shape: const StadiumBorder(), elevation: 4),
-                  child: const Text('Plan My Journey'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.teal,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Plan My Journey', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
