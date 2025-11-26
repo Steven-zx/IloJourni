@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/welcome_screen.dart';
 import 'screens/sign_in_screen.dart';
@@ -16,8 +17,12 @@ import 'screens/trip_detail_screen.dart';
 import 'screens/trip_budget_tracker_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
+import 'services/saved_trips_store.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await SavedTripsStore.instance.initialize();
   runApp(const MyApp());
 }
 

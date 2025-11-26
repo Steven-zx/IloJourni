@@ -15,6 +15,79 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   String _selectedView = 'List'; // 'List' or 'Map'
   String _selectedDay = 'All';
 
+  List<Widget> _buildFilteredContent(bool isDark) {
+    final allContent = [
+      // Day 1 content
+      {'day': 1, 'widget': _DayHeader(day: 'Day 1', dayNumber: 1, subtitle: '2 activities planned', isDark: isDark)},
+      {'day': 1, 'widget': const SizedBox(height: 12)},
+      {'day': 1, 'widget': _ActivityCard(
+        number: 1,
+        day: 1,
+        title: 'Jaro Cathedral',
+        image: 'assets/images/jaroCathedral.jpg',
+        imageColor: const Color(0xFFE8B86D),
+        description: 'Start your day with a visit to Jaro Cathedral, one of Iloilo\'s most historic churches known for its grand architecture and the miraculous Our Lady of Candles.',
+        time: '1 hour',
+        location: 'Jaro, Iloilo City',
+        price: 'Free Entry',
+        tags: const ['Culture', 'Arts'],
+        isDark: isDark,
+      )},
+      {'day': 1, 'widget': const SizedBox(height: 12)},
+      {'day': 1, 'widget': _RideCard(
+        line: 'Ride: Ungka',
+        details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 15',
+        day: 1,
+        isDark: isDark,
+      )},
+      {'day': 1, 'widget': const SizedBox(height: 12)},
+      {'day': 1, 'widget': _ActivityCard(
+        number: 2,
+        day: 1,
+        title: 'Netong\'s',
+        image: 'assets/images/netongsBatchoy.jpg',
+        imageColor: const Color(0xFFE67E22),
+        description: 'Grab brunch at Netong\'s, the home of the original La Paz Batchoy — a comforting bowl of Ilonggo goodness.',
+        time: '1 hour',
+        location: 'La Paz Public Market',
+        price: '₱ 150-200',
+        tags: const ['Culture', 'Arts'],
+        isDark: isDark,
+      )},
+      {'day': 1, 'widget': const SizedBox(height: 12)},
+      {'day': 1, 'widget': _RideCard(
+        line: 'Ride: Ungka',
+        details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 12-15',
+        day: 1,
+        isDark: isDark,
+      )},
+      {'day': 1, 'widget': const SizedBox(height: 12)},
+      {'day': 1, 'widget': _ActivityCard(
+        number: 3,
+        day: 1,
+        title: 'Roberto\'s',
+        image: 'assets/images/robertos.jpg',
+        imageColor: const Color(0xFF2C3E50),
+        description: 'For lunch, try Roberto\'s famous Grawn Siopao — a local favorite packed with rich flavors.',
+        time: '1 hour',
+        location: 'Iloilo City Proper',
+        price: '₱ 100-250',
+        tags: const ['Culture', 'Arts'],
+        isDark: isDark,
+      )},
+    ];
+
+    if (_selectedDay == 'All') {
+      return allContent.map((item) => item['widget'] as Widget).toList();
+    } else {
+      final dayNumber = int.parse(_selectedDay.split(' ')[1]);
+      return allContent
+          .where((item) => item['day'] == dayNumber)
+          .map((item) => item['widget'] as Widget)
+          .toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -181,60 +254,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
-              children: [
-                _DayHeader(day: 'Day 1', subtitle: '2 activities planned', isDark: isDark),
-                const SizedBox(height: 12),
-                _ActivityCard(
-                  number: 1,
-                  title: 'Jaro Cathedral',
-                  image: 'assets/images/jaroCathedral.jpg',
-                  imageColor: const Color(0xFFE8B86D),
-                  description: 'Start your day with a visit to Jaro Cathedral, one of Iloilo\'s most historic churches known for its grand architecture and the miraculous Our Lady of Candles.',
-                  time: '1 hour',
-                  location: 'Jaro, Iloilo City',
-                  price: 'Free Entry',
-                  tags: const ['Culture', 'Arts'],
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _RideCard(
-                  line: 'Ride: Ungka',
-                  details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 15',
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _ActivityCard(
-                  number: 2,
-                  title: 'Netong\'s',
-                  image: 'assets/images/netongsBatchoy.jpg',
-                  imageColor: const Color(0xFFE67E22),
-                  description: 'Grab brunch at Netong\'s, the home of the original La Paz Batchoy — a comforting bowl of Ilonggo goodness.',
-                  time: '1 hour',
-                  location: 'La Paz Public Market',
-                  price: '₱ 150-200',
-                  tags: const ['Culture', 'Arts'],
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _RideCard(
-                  line: 'Ride: Ungka',
-                  details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 12-15',
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _ActivityCard(
-                  number: 3,
-                  title: 'Roberto\'s',
-                  image: 'assets/images/robertos.jpg',
-                  imageColor: const Color(0xFF2C3E50),
-                  description: 'For lunch, try Roberto\'s famous Grawn Siopao — a local favorite packed with rich flavors.',
-                  time: '1 hour',
-                  location: 'Iloilo City Proper',
-                  price: '₱ 100-250',
-                  tags: const ['Culture', 'Arts'],
-                  isDark: isDark,
-                ),
-              ],
+              children: _buildFilteredContent(isDark),
             ),
           ),
           // Budget Tracker Button
@@ -419,11 +439,13 @@ class _DayChip extends StatelessWidget {
 class _DayHeader extends StatelessWidget {
   const _DayHeader({
     required this.day,
+    required this.dayNumber,
     required this.subtitle,
     required this.isDark,
   });
 
   final String day;
+  final int dayNumber;
   final String subtitle;
   final bool isDark;
 
@@ -462,6 +484,7 @@ class _DayHeader extends StatelessWidget {
 class _ActivityCard extends StatelessWidget {
   const _ActivityCard({
     required this.number,
+    required this.day,
     required this.title,
     required this.image,
     this.imageColor,
@@ -474,6 +497,7 @@ class _ActivityCard extends StatelessWidget {
   });
 
   final int number;
+  final int day;
   final String title;
   final String image;
   final Color? imageColor;
@@ -625,11 +649,13 @@ class _RideCard extends StatelessWidget {
   const _RideCard({
     required this.line,
     required this.details,
+    required this.day,
     required this.isDark,
   });
 
   final String line;
   final String details;
+  final int day;
   final bool isDark;
 
   @override

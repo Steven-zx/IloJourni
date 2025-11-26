@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/saved_trips_store.dart';
 import 'home_shell.dart';
 import 'more_info_screen.dart';
+import 'trip_detail_screen.dart';
 
 class ItineraryDay {
   final int dayNumber;
@@ -44,16 +46,19 @@ class ManualItineraryScreen extends StatefulWidget {
 
 class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
   final TextEditingController _titleController = TextEditingController(text: 'My Custom Iloilo Trip');
+  final TextEditingController _budgetController = TextEditingController(text: '0');
   List<ItineraryDay> days = [
     ItineraryDay(dayNumber: 1),
     ItineraryDay(dayNumber: 2),
     ItineraryDay(dayNumber: 3),
   ];
   int selectedDayIndex = 0;
+  final Map<int, bool> _expandedDays = {0: true, 1: false, 2: false};
 
   @override
   void dispose() {
     _titleController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -75,7 +80,9 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
 
   void _addDay() {
     setState(() {
+      final newDayIndex = days.length;
       days.add(ItineraryDay(dayNumber: days.length + 1));
+      _expandedDays[newDayIndex] = false;
     });
   }
 
@@ -83,13 +90,65 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     if (days.length > 1) {
       setState(() {
         days.removeAt(index);
-        // Renumber days
+        _expandedDays.remove(index);
+        // Renumber days and update expanded map
+        final newExpandedDays = <int, bool>{};
         for (int i = 0; i < days.length; i++) {
           days[i] = ItineraryDay(dayNumber: i + 1, destinations: days[i].destinations);
+          newExpandedDays[i] = _expandedDays[i + (i >= index ? 1 : 0)] ?? false;
         }
+        _expandedDays.clear();
+        _expandedDays.addAll(newExpandedDays);
         if (selectedDayIndex >= days.length) {
           selectedDayIndex = days.length - 1;
         }
+      });
+    }
+  }
+
+  void _toggleDayExpansion(int index) {
+    setState(() {
+      _expandedDays[index] = !(_expandedDays[index] ?? false);
+    });
+  }
+
+  void _showBudgetDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: _budgetController.text);
+        return AlertDialog(
+          title: const Text('Set Budget'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              prefixText: 'P ',
+              hintText: 'Enter budget amount',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.teal,
+              ),
+              child: const Text('Set'),
+            ),
+          ],
+        );
+      },
+    );
+    
+    if (result != null) {
+      setState(() {
+        _budgetController.text = result;
       });
     }
   }
@@ -117,96 +176,144 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
       return;
     }
 
+    final budget = int.tryParse(_budgetController.text) ?? 0;
+
+    // Save to SavedTripsStore
     SavedTripsStore.add(SavedTrip(
       title: _titleController.text,
       dateRange: 'Custom Trip • ${days.length} days',
-      budget: 0,
+      budget: budget,
       image: days.first.destinations.isNotEmpty ? days.first.destinations.first.image : '',
     ));
 
-    Navigator.popUntil(context, (route) => route.settings.name == '/home');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Itinerary created! View it in Saved Trips.'),
-        backgroundColor: AppTheme.teal,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    // Navigate to TripDetailScreen
+    Navigator.pushReplacementNamed(context, TripDetailScreen.route);
+    
+    // Show success message
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Itinerary created and saved to trips!'),
+            backgroundColor: AppTheme.teal,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final totalDestinations = _getTotalDestinations();
+    final budget = int.tryParse(_budgetController.text) ?? 0;
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.teal,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Build Your Itinerary', style: TextStyle(color: Colors.white, fontSize: 18)),
-          ],
-        ),
-      ),
       body: Column(
         children: [
           // Header section
           Container(
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.darkSurface : AppTheme.teal,
+              color: isDark ? AppTheme.darkTeal : AppTheme.teal,
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Column(
-              children: [
-                // Title input
-                TextField(
-                  controller: _titleController,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-                  decoration: InputDecoration(
-                    hintText: 'Trip Title',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.2),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  // App bar
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Build Your Itinerary',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Stats row
-                Row(
-                  children: [
-                    _StatBadge(
-                      icon: Icons.event,
-                      value: '${days.length}',
-                      label: 'days',
+                  // Title input
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _titleController,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.grey[800],
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'My Custom Iloilo Trip',
+                        hintStyle: TextStyle(
+                          color: isDark ? Colors.white38 : Colors.grey[400],
+                        ),
+                        filled: true,
+                        fillColor: isDark ? AppTheme.darkCard : Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    _StatBadge(
-                      icon: Icons.place,
-                      value: '${totalDestinations}',
-                      label: 'stops',
+                  ),
+                  const SizedBox(height: 16),
+                  // Stats row
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _StatBadge(
+                            icon: Icons.event,
+                            value: '${days.length}',
+                            label: 'days',
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _StatBadge(
+                            icon: Icons.place,
+                            value: '$totalDestinations',
+                            label: 'stops',
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showBudgetDialog(),
+                            child: _StatBadge(
+                              icon: Icons.account_balance_wallet,
+                              value: 'P$budget',
+                              label: 'budget',
+                              isDark: isDark,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    _StatBadge(
-                      icon: Icons.account_balance_wallet,
-                      value: 'P0',
-                      label: 'budget',
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -217,19 +324,21 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _DayTab(
+                  _DayChip(
                     label: 'All',
                     isSelected: selectedDayIndex == -1,
                     onTap: () => setState(() => selectedDayIndex = -1),
+                    isDark: isDark,
                   ),
                   ...days.asMap().entries.map((entry) {
                     final index = entry.key;
                     return Padding(
                       padding: const EdgeInsets.only(left: 8),
-                      child: _DayTab(
+                      child: _DayChip(
                         label: 'Day ${index + 1}',
                         isSelected: selectedDayIndex == index,
                         onTap: () => setState(() => selectedDayIndex = index),
+                        isDark: isDark,
                       ),
                     );
                   }),
@@ -245,22 +354,14 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
               itemCount: days.length,
               itemBuilder: (context, index) {
                 final day = days[index];
-                final isExpanded = selectedDayIndex == index || selectedDayIndex == -1;
+                final isExpanded = _expandedDays[index] ?? false;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _DayCard(
                     day: day,
                     isExpanded: isExpanded,
-                    onToggle: () {
-                      setState(() {
-                        if (selectedDayIndex == index) {
-                          selectedDayIndex = -1;
-                        } else {
-                          selectedDayIndex = index;
-                        }
-                      });
-                    },
+                    onToggle: () => _toggleDayExpansion(index),
                     onAddDestination: () {
                       setState(() => selectedDayIndex = index);
                       _showDestinationPicker();
@@ -268,6 +369,7 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
                     onRemoveDestination: (destIndex) => _removeDestinationFromDay(index, destIndex),
                     onDeleteDay: () => _removeDay(index),
                     canDelete: days.length > 1,
+                    isDark: isDark,
                   ),
                 );
               },
@@ -330,28 +432,58 @@ class _StatBadge extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
+  final bool isDark;
 
-  const _StatBadge({required this.icon, required this.value, required this.label});
+  const _StatBadge({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: isDark ? AppTheme.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black26 : Colors.black12,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(width: 6),
+          Icon(
+            icon,
+            color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-              Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10)),
+              Text(
+                value,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey[600],
+                  fontSize: 11,
+                ),
+              ),
             ],
           ),
         ],
@@ -360,16 +492,16 @@ class _StatBadge extends StatelessWidget {
   }
 }
 
-class _DayTab extends StatelessWidget {
+class _DayChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isDark;
 
-  const _DayTab({required this.label, required this.isSelected, required this.onTap});
+  const _DayChip({required this.label, required this.isSelected, required this.onTap, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -406,6 +538,7 @@ class _DayCard extends StatelessWidget {
   final Function(int) onRemoveDestination;
   final VoidCallback onDeleteDay;
   final bool canDelete;
+  final bool isDark;
 
   const _DayCard({
     required this.day,
@@ -415,11 +548,11 @@ class _DayCard extends StatelessWidget {
     required this.onRemoveDestination,
     required this.onDeleteDay,
     required this.canDelete,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       decoration: BoxDecoration(

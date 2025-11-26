@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../widgets/placeholder_image.dart';
 import 'trip_detail_screen.dart';
 import 'plan_form_screen.dart';
+import 'manual_itinerary_screen.dart';
 
 class SavedTripsScreen extends StatefulWidget {
   const SavedTripsScreen({super.key});
@@ -150,7 +151,69 @@ class _SavedTripsScreenState extends State<SavedTripsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushNamed(context, PlanFormScreen.route);
+                          showModalBottomSheet(
+                            context: context,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            backgroundColor: isDark ? AppTheme.darkCard : Colors.white,
+                            builder: (context) => Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white24 : Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'Create a Trip',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Choose how you want to plan',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark ? Colors.white60 : Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _PlanOptionCard(
+                                    icon: Icons.auto_awesome,
+                                    title: 'AI Planning',
+                                    description: 'Let AI create your perfect itinerary',
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      Navigator.pushNamed(context, PlanFormScreen.route);
+                                    },
+                                    isDark: isDark,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _PlanOptionCard(
+                                    icon: Icons.edit_calendar,
+                                    title: 'Build Manually',
+                                    description: 'Create your own custom itinerary',
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      Navigator.pushNamed(context, ManualItineraryScreen.route);
+                                    },
+                                    isDark: isDark,
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDark ? AppTheme.darkTeal : AppTheme.teal,
@@ -375,7 +438,7 @@ class _TripCard extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -423,7 +486,7 @@ class _TripCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
@@ -437,9 +500,9 @@ class _TripCard extends StatelessWidget {
                           ),
                           elevation: 0,
                         ),
-                        child: Text(
-                          status == 'Upcoming' ? 'View Budget' : 'Open',
-                          style: const TextStyle(
+                        child: const Text(
+                          'View Trip',
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -488,6 +551,88 @@ class _TripCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PlanOptionCard extends StatelessWidget {
+  const _PlanOptionCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkCard : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.grey.shade200,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppTheme.darkTeal.withOpacity(0.2)
+                    : AppTheme.teal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white60 : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? Colors.white38 : Colors.grey[400],
+            ),
+          ],
+        ),
       ),
     );
   }

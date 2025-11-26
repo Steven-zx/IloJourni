@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+import '../services/gemini_service.dart';
 import 'itinerary_screen.dart';
 
 class PlanFormScreen extends StatefulWidget {
@@ -12,18 +13,17 @@ class PlanFormScreen extends StatefulWidget {
 }
 
 class _PlanFormScreenState extends State<PlanFormScreen> {
-  String? _selectedBudget;
-  int? _selectedDays;
+  final TextEditingController _budgetController = TextEditingController();
+  final TextEditingController _daysController = TextEditingController();
   final Set<String> _styles = {};
+  bool _isGenerating = false;
 
-  final List<String> _budgetOptions = [
-    '₱1,000 - ₱3,000',
-    '₱3,000 - ₱5,000',
-    '₱5,000 - ₱10,000',
-    '₱10,000+',
-  ];
-
-  final List<int> _daysOptions = [1, 2, 3, 4, 5, 6, 7];
+  @override
+  void dispose() {
+    _budgetController.dispose();
+    _daysController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,51 +47,55 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
               const SizedBox(height: 24),
               Text('Budget', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<String>(
-                  value: _selectedBudget,
-                  hint: const Text('Select budget range'),
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  items: _budgetOptions.map((budget) {
-                    return DropdownMenuItem<String>(
-                      value: budget,
-                      child: Text(budget),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedBudget = value),
+              TextField(
+                controller: _budgetController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  hintText: 'Enter your budget (₱)',
+                  prefixText: '₱ ',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.teal, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
               const SizedBox(height: 20),
               Text('Number of Days', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<int>(
-                  value: _selectedDays,
-                  hint: const Text('Select number of days'),
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  items: _daysOptions.map((days) {
-                    return DropdownMenuItem<int>(
-                      value: days,
-                      child: Text('$days ${days == 1 ? "Day" : "Days"}'),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedDays = value),
+              TextField(
+                controller: _daysController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  hintText: 'Enter number of days',
+                  suffixText: 'days',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppTheme.teal, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
               const SizedBox(height: 20),
@@ -149,36 +153,23 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_selectedBudget == null || _selectedDays == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please select budget and number of days')),
-                      );
-                      return;
-                    }
-                    if (_styles.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please select at least one travel style')),
-                      );
-                      return;
-                    }
-                    Navigator.pushNamed(
-                      context,
-                      ItineraryScreen.route,
-                      arguments: {
-                        'budget': _selectedBudget,
-                        'days': _selectedDays,
-                        'styles': _styles.toList(),
-                      },
-                    );
-                  },
+                  onPressed: _isGenerating ? null : _generateItinerary,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.teal,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 2,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Plan My Journey', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  child: _isGenerating
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Plan My Journey', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
@@ -186,6 +177,142 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _generateItinerary() async {
+    final budget = _budgetController.text.trim();
+    final daysText = _daysController.text.trim();
+    
+    if (budget.isEmpty || daysText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter budget and number of days')),
+      );
+      return;
+    }
+    
+    final days = int.tryParse(daysText);
+    if (days == null || days <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid number of days')),
+      );
+      return;
+    }
+
+    if (days > 7) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 7 days per trip')),
+      );
+      return;
+    }
+    
+    if (_styles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one travel style')),
+      );
+      return;
+    }
+
+    setState(() => _isGenerating = true);
+
+    try {
+      final geminiService = await GeminiService.getInstance();
+      
+      // Show loading dialog with progress
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Creating your perfect itinerary...',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This may take 5-10 seconds',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final itinerary = await geminiService.generateItinerary(
+        budget: int.parse(budget),
+        days: days,
+        travelStyles: _styles.toList(),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      Navigator.pushNamed(
+        context,
+        ItineraryScreen.route,
+        arguments: {
+          'itinerary': itinerary,
+          'budget': '₱$budget',
+          'days': days,
+          'styles': _styles.toList(),
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Close loading dialog if open
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
+      String errorMessage = 'Failed to generate itinerary';
+      
+      if (e.toString().contains('API key')) {
+        errorMessage = 'Invalid API key. Please check your configuration.';
+      } else if (e.toString().contains('quota')) {
+        errorMessage = 'API quota exceeded. Please try again later.';
+      } else if (e.toString().contains('parse')) {
+        errorMessage = 'Received invalid response. Please try again.';
+      } else if (e.toString().contains('Empty response')) {
+        errorMessage = 'No response from AI. Please check your internet connection.';
+      }
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Generation Failed'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(errorMessage),
+              const SizedBox(height: 8),
+              Text(
+                'Technical details: ${e.toString()}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGenerating = false);
+      }
+    }
   }
 }
 

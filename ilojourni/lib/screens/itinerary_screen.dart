@@ -1,15 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/placeholder_image.dart';
 import '../services/saved_trips_store.dart';
+import '../models/destination.dart';
 
-class ItineraryScreen extends StatelessWidget {
+class ItineraryScreen extends StatefulWidget {
   const ItineraryScreen({super.key});
   static const route = '/itinerary';
 
   @override
+  State<ItineraryScreen> createState() => _ItineraryScreenState();
+}
+
+class _ItineraryScreenState extends State<ItineraryScreen> {
+  String _selectedDay = 'All';
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    
+    final GeneratedItinerary? itinerary = args?['itinerary'] as GeneratedItinerary?;
+    final String budget = args?['budget'] as String? ?? '₱0';
+    final int days = args?['days'] as int? ?? 1;
+    
+    // If no itinerary was generated, show error
+    if (itinerary == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: const Center(
+          child: Text('Failed to generate itinerary. Please try again.'),
+        ),
+      );
+    }
+
+    final filteredDays = _selectedDay == 'All' 
+        ? itinerary.days 
+        : itinerary.days.where((d) => d.dayNumber.toString() == _selectedDay.replaceAll('Day ', '')).toList();
     
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
@@ -19,7 +47,7 @@ class ItineraryScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Your Iloilo Adventure Awaits',
+          itinerary.title,
           style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         ),
         backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
@@ -27,75 +55,103 @@ class ItineraryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            "Here's your personalized itinerary",
-            style: TextStyle(color: isDark ? Colors.white60 : Colors.grey[600]),
-            textAlign: TextAlign.center,
+          if (itinerary.summary.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                itinerary.summary,
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.grey[600],
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          _SummaryRow(
+            days: days,
+            totalCost: itinerary.totalCost,
+            budget: itinerary.totalBudget,
+            isDark: isDark,
           ),
           const SizedBox(height: 16),
-          _SummaryRow(isDark: isDark),
-          const SizedBox(height: 16),
           // Day filter chips
-          Container(
+          SizedBox(
             height: 50,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _DayChip(label: 'All', isSelected: true, onTap: () {}, isDark: isDark),
+                _DayChip(
+                  label: 'All', 
+                  isSelected: _selectedDay == 'All', 
+                  onTap: () => setState(() => _selectedDay = 'All'), 
+                  isDark: isDark,
+                ),
                 const SizedBox(width: 8),
-                _DayChip(label: 'Day 1', isSelected: false, onTap: () {}, isDark: isDark),
-                const SizedBox(width: 8),
-                _DayChip(label: 'Day 2', isSelected: false, onTap: () {}, isDark: isDark),
-                const SizedBox(width: 8),
-                _DayChip(label: 'Day 3', isSelected: false, onTap: () {}, isDark: isDark),
+                ...List.generate(days, (index) {
+                  final dayLabel = 'Day ${index + 1}';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _DayChip(
+                      label: dayLabel,
+                      isSelected: _selectedDay == dayLabel,
+                      onTap: () => setState(() => _selectedDay = dayLabel),
+                      isDark: isDark,
+                    ),
+                  );
+                }),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          _DayHeader(day: 'Day 1', subtitle: '2 activities planned', isDark: isDark),
-          const SizedBox(height: 12),
-          _PlaceCard(
-            number: 1,
-            title: 'Jaro Cathedral',
-            image: 'assets/images/jaroCathedral.jpg',
-            imageColor: const Color(0xFFE8B86D),
-            description: 'Start your day with a visit to Jaro Cathedral, one of Iloilo\'s most historic churches known for its grand architecture and the miraculous Our Lady of Candles.',
-            time: '1 hour',
-            location: 'Jaro, Iloilo City',
-            price: 'Free Entry',
-            tags: const ['Culture', 'Arts'],
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-          _RideSegment(line: 'Ride: Ungka', details: 'Jeep • E-Bus   2-3 hours   Fare: \u20b1 15', isDark: isDark),
-          const SizedBox(height: 12),
-          _PlaceCard(
-            number: 2,
-            title: "Netong's",
-            image: 'assets/images/netongsBatchoy.jpg',
-            imageColor: const Color(0xFFE67E22),
-            description: 'Grab brunch at Netong\'s, the home of the original La Paz Batchoy — a comforting bowl of Ilonggo goodness.',
-            time: '1 hour',
-            location: 'La Paz Public Market',
-            price: '\u20b1 150-200',
-            tags: const ['Culture', 'Arts'],
-            isDark: isDark,
-          ),
-          const SizedBox(height: 12),
-          _RideSegment(line: 'Ride: Ungka', details: 'Jeep • E-Bus   2-3 hours   Fare: \u20b1 12-15', isDark: isDark),
-          const SizedBox(height: 12),
-          _PlaceCard(
-            number: 3,
-            title: 'Roberto\'s',
-            image: 'assets/images/robertos.jpg',
-            imageColor: const Color(0xFF2C3E50),
-            description: 'For lunch, try Roberto\'s famous Grawn Siopao — a local favorite packed with rich flavors.',
-            time: '1 hour',
-            location: 'Iloilo City Proper',
-            price: '\u20b1 100-250',
-            tags: const ['Culture', 'Arts'],
-            isDark: isDark,
-          ),
+          // Display days and activities
+          ...filteredDays.map((dayPlan) {
+            return Column(
+              children: [
+                _DayHeader(
+                  day: 'Day ${dayPlan.dayNumber}',
+                  subtitle: '${dayPlan.activities.length} activities • ${dayPlan.theme}',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 12),
+                ...dayPlan.activities.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final activity = entry.value;
+                  
+                  if (activity.type == 'transport') {
+                    return Column(
+                      children: [
+                        _RideSegment(
+                          line: activity.name,
+                          details: '${activity.description}   Fare: ₱${activity.cost}',
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    );
+                  }
+                  
+                  return Column(
+                    children: [
+                      _PlaceCard(
+                        number: index + 1,
+                        title: activity.name,
+                        image: activity.image ?? 'assets/images/jaroCathedral.jpg',
+                        imageColor: _getActivityColor(activity.type),
+                        description: activity.description,
+                        time: activity.time,
+                        location: activity.location ?? '',
+                        price: activity.cost == 0 ? 'Free' : '₱${activity.cost}',
+                        tags: activity.tags ?? [],
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                }).toList(),
+                const SizedBox(height: 8),
+              ],
+            );
+          }).toList(),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -118,9 +174,9 @@ class ItineraryScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     SavedTripsStore.add(SavedTrip(
-                      title: 'Weekend Foodie Trip',
-                      dateRange: 'October 13-15, 2025',
-                      budget: 3000,
+                      title: itinerary.title,
+                      dateRange: _generateDateRange(days),
+                      budget: itinerary.totalCost,
                       image: '',
                     ));
                     Navigator.popUntil(context, (route) => route.settings.name == '/home');
@@ -145,6 +201,28 @@ class ItineraryScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'destination':
+        return const Color(0xFF4A90E2);
+      case 'meal':
+        return const Color(0xFFE67E22);
+      case 'transport':
+        return const Color(0xFF9B59B6);
+      default:
+        return const Color(0xFF2C3E50);
+    }
+  }
+
+  String _generateDateRange(int days) {
+    final now = DateTime.now();
+    final start = now.add(const Duration(days: 7)); // Trip starts next week
+    final end = start.add(Duration(days: days - 1));
+    
+    final formatter = DateFormat('MMMM d');
+    return '${formatter.format(start)}-${formatter.format(end)}, ${end.year}';
   }
 }
 
@@ -195,12 +273,21 @@ class _DayChip extends StatelessWidget {
 }
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.isDark});
+  const _SummaryRow({
+    required this.days,
+    required this.totalCost,
+    required this.budget,
+    required this.isDark,
+  });
+  
+  final int days;
+  final int totalCost;
+  final int budget;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    Widget item(IconData icon, String title, String value) => Expanded(
+    Widget item(IconData icon, String title, String value, {Color? valueColor}) => Expanded(
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -229,20 +316,24 @@ class _SummaryRow extends StatelessWidget {
                   value,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: valueColor ?? (isDark ? Colors.white : Colors.black87),
                   ),
                 ),
               ],
             ),
           ),
         );
+    
+    final isOverBudget = totalCost > budget;
+    
     return Row(
       children: [
-        item(Icons.schedule, 'Duration', '1 Day'),
+        item(Icons.schedule, 'Duration', '$days ${days == 1 ? 'Day' : 'Days'}'),
         const SizedBox(width: 8),
-        item(Icons.place_outlined, 'Places', '7 Spots'),
+        item(Icons.payments_outlined, 'Total Cost', '₱$totalCost', 
+          valueColor: isOverBudget ? Colors.red : null),
         const SizedBox(width: 8),
-        item(Icons.payments_outlined, 'Budget', '\u20b1 3000'),
+        item(Icons.account_balance_wallet, 'Budget', '₱$budget'),
       ],
     );
   }
