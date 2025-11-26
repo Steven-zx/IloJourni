@@ -7,7 +7,7 @@ import 'screens/home_shell.dart';
 import 'screens/plan_form_screen.dart';
 import 'screens/itinerary_screen.dart';
 import 'screens/saved_trips_screen.dart';
-import 'screens/budget_tracker_screen.dart';
+import 'screens/explore_screen.dart';
 import 'screens/more_info_screen.dart';
 import 'screens/profile_guest_screen.dart';
 import 'screens/profile_signed_screen.dart';
@@ -62,7 +62,7 @@ class _MyAppState extends State<MyApp> {
         PlanFormScreen.route: (_) => const PlanFormScreen(),
         ItineraryScreen.route: (_) => const ItineraryScreen(),
         SavedTripsScreen.route: (_) => const SavedTripsScreen(),
-        BudgetTrackerScreen.route: (_) => const BudgetTrackerScreen(),
+        ExploreScreen.route: (_) => const ExploreScreen(),
         MoreInfoScreen.route: (_) => const MoreInfoScreen(),
         ProfileGuestScreen.route: (_) => const ProfileGuestScreen(),
         ProfileSignedScreen.route: (_) => const ProfileSignedScreen(),
