@@ -1,0 +1,993 @@
+import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+import '../services/saved_trips_store.dart';
+import 'home_shell.dart';
+import 'more_info_screen.dart';
+
+class ItineraryDay {
+  final int dayNumber;
+  final List<DestinationItem> destinations;
+
+  ItineraryDay({required this.dayNumber, this.destinations = const []});
+
+  ItineraryDay copyWith({List<DestinationItem>? destinations}) {
+    return ItineraryDay(
+      dayNumber: dayNumber,
+      destinations: destinations ?? this.destinations,
+    );
+  }
+}
+
+class DestinationItem {
+  final String id;
+  final String name;
+  final String district;
+  final String category;
+  final String image;
+
+  const DestinationItem({
+    required this.id,
+    required this.name,
+    required this.district,
+    required this.category,
+    required this.image,
+  });
+}
+
+class ManualItineraryScreen extends StatefulWidget {
+  const ManualItineraryScreen({super.key});
+  static const route = '/manual-itinerary';
+
+  @override
+  State<ManualItineraryScreen> createState() => _ManualItineraryScreenState();
+}
+
+class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
+  final TextEditingController _titleController = TextEditingController(text: 'My Custom Iloilo Trip');
+  List<ItineraryDay> days = [
+    ItineraryDay(dayNumber: 1),
+    ItineraryDay(dayNumber: 2),
+    ItineraryDay(dayNumber: 3),
+  ];
+  int selectedDayIndex = 0;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  void _addDestinationToDay(DestinationItem destination) {
+    setState(() {
+      final updatedDestinations = List<DestinationItem>.from(days[selectedDayIndex].destinations)
+        ..add(destination);
+      days[selectedDayIndex] = days[selectedDayIndex].copyWith(destinations: updatedDestinations);
+    });
+  }
+
+  void _removeDestinationFromDay(int dayIndex, int destinationIndex) {
+    setState(() {
+      final updatedDestinations = List<DestinationItem>.from(days[dayIndex].destinations)
+        ..removeAt(destinationIndex);
+      days[dayIndex] = days[dayIndex].copyWith(destinations: updatedDestinations);
+    });
+  }
+
+  void _addDay() {
+    setState(() {
+      days.add(ItineraryDay(dayNumber: days.length + 1));
+    });
+  }
+
+  void _removeDay(int index) {
+    if (days.length > 1) {
+      setState(() {
+        days.removeAt(index);
+        // Renumber days
+        for (int i = 0; i < days.length; i++) {
+          days[i] = ItineraryDay(dayNumber: i + 1, destinations: days[i].destinations);
+        }
+        if (selectedDayIndex >= days.length) {
+          selectedDayIndex = days.length - 1;
+        }
+      });
+    }
+  }
+
+  int _getTotalDestinations() {
+    return days.fold(0, (sum, day) => sum + day.destinations.length);
+  }
+
+  void _showDestinationPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DestinationPickerSheet(
+        onDestinationSelected: _addDestinationToDay,
+      ),
+    );
+  }
+
+  void _createItinerary() {
+    if (_getTotalDestinations() == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one destination')),
+      );
+      return;
+    }
+
+    SavedTripsStore.add(SavedTrip(
+      title: _titleController.text,
+      dateRange: 'Custom Trip • ${days.length} days',
+      budget: 0,
+      image: days.first.destinations.isNotEmpty ? days.first.destinations.first.image : '',
+    ));
+
+    Navigator.popUntil(context, (route) => route.settings.name == '/home');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Itinerary created! View it in Saved Trips.'),
+        backgroundColor: AppTheme.teal,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final totalDestinations = _getTotalDestinations();
+
+    return Scaffold(
+      backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.teal,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text('Build Your Itinerary', style: TextStyle(color: Colors.white, fontSize: 18)),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Header section
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : AppTheme.teal,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: Column(
+              children: [
+                // Title input
+                TextField(
+                  controller: _titleController,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                  decoration: InputDecoration(
+                    hintText: 'Trip Title',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.2),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Stats row
+                Row(
+                  children: [
+                    _StatBadge(
+                      icon: Icons.event,
+                      value: '${days.length}',
+                      label: 'days',
+                    ),
+                    const SizedBox(width: 12),
+                    _StatBadge(
+                      icon: Icons.place,
+                      value: '${totalDestinations}',
+                      label: 'stops',
+                    ),
+                    const SizedBox(width: 12),
+                    _StatBadge(
+                      icon: Icons.account_balance_wallet,
+                      value: 'P0',
+                      label: 'budget',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Day tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _DayTab(
+                    label: 'All',
+                    isSelected: selectedDayIndex == -1,
+                    onTap: () => setState(() => selectedDayIndex = -1),
+                  ),
+                  ...days.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _DayTab(
+                        label: 'Day ${index + 1}',
+                        isSelected: selectedDayIndex == index,
+                        onTap: () => setState(() => selectedDayIndex = index),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Days list
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                final day = days[index];
+                final isExpanded = selectedDayIndex == index || selectedDayIndex == -1;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _DayCard(
+                    day: day,
+                    isExpanded: isExpanded,
+                    onToggle: () {
+                      setState(() {
+                        if (selectedDayIndex == index) {
+                          selectedDayIndex = -1;
+                        } else {
+                          selectedDayIndex = index;
+                        }
+                      });
+                    },
+                    onAddDestination: () {
+                      setState(() => selectedDayIndex = index);
+                      _showDestinationPicker();
+                    },
+                    onRemoveDestination: (destIndex) => _removeDestinationFromDay(index, destIndex),
+                    onDeleteDay: () => _removeDay(index),
+                    canDelete: days.length > 1,
+                  ),
+                );
+              },
+            ),
+          ),
+          // Bottom buttons
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black26 : Colors.black12,
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _addDay,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: isDark ? AppTheme.darkAccent : AppTheme.teal, width: 1.5),
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    icon: Icon(Icons.add, color: isDark ? AppTheme.darkAccent : AppTheme.teal),
+                    label: Text('Add Another Day', style: TextStyle(color: isDark ? AppTheme.darkAccent : AppTheme.teal, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _createItinerary,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? AppTheme.darkTeal : AppTheme.teal,
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 3,
+                    ),
+                    icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                    label: const Text('Create Itinerary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+
+  const _StatBadge({required this.icon, required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 16),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayTab extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DayTab({required this.label, required this.isSelected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
+              : (isDark ? AppTheme.darkCard : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
+                : (isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade300),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DayCard extends StatelessWidget {
+  final ItineraryDay day;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final VoidCallback onAddDestination;
+  final Function(int) onRemoveDestination;
+  final VoidCallback onDeleteDay;
+  final bool canDelete;
+
+  const _DayCard({
+    required this.day,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onAddDestination,
+    required this.onRemoveDestination,
+    required this.onDeleteDay,
+    required this.canDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          // Day header
+          InkWell(
+            onTap: onToggle,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${day.dayNumber}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Day ${day.dayNumber}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                        ),
+                        Text(
+                          '${day.destinations.length} destination${day.destinations.length != 1 ? 's' : ''}',
+                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (canDelete)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      onPressed: onDeleteDay,
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      color: Colors.white,
+                    ),
+                    onPressed: onToggle,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Day content
+          if (isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkBackground : Colors.white,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  if (day.destinations.isEmpty)
+                    Column(
+                      children: [
+                        const Icon(Icons.place, color: Colors.grey, size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No destinations yet',
+                          style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add your first stop to get started',
+                          style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    )
+                  else
+                    ...day.destinations.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final dest = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _DestinationCard(
+                          destination: dest,
+                          onRemove: () => onRemoveDestination(index),
+                        ),
+                      );
+                    }),
+                  // Add destination button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onAddDestination,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: isDark ? AppTheme.darkAccent : AppTheme.teal, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: Icon(Icons.add, color: isDark ? AppTheme.darkAccent : AppTheme.teal),
+                      label: Text(
+                        'Add Destination',
+                        style: TextStyle(color: isDark ? AppTheme.darkAccent : AppTheme.teal, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DestinationCard extends StatelessWidget {
+  final DestinationItem destination;
+  final VoidCallback onRemove;
+
+  const _DestinationCard({required this.destination, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Locations that have full detail pages
+    final availableLocations = ['molo-church', 'jaro-cathedral', 'esplanade', 'molo-mansion', 'netongs-batchoy'];
+    final hasDetails = availableLocations.contains(destination.id);
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          print('Card tapped! ID: ${destination.id}, Has details: $hasDetails');
+          if (hasDetails) {
+            print('Navigating to MoreInfoScreen with ID: ${destination.id}');
+            Navigator.pushNamed(
+              context,
+              MoreInfoScreen.route,
+              arguments: destination.id,
+            );
+          } else {
+            print('Showing snackbar for: ${destination.name}');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Full details for ${destination.name} coming soon!'),
+                backgroundColor: AppTheme.teal,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkCard : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+                child: Image.asset(
+                  destination.image,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80,
+                    height: 80,
+                    color: AppTheme.teal.withOpacity(0.3),
+                    child: const Icon(Icons.place, color: AppTheme.teal),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        destination.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${destination.district} • ${destination.category}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                onPressed: onRemove,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DestinationPickerSheet extends StatefulWidget {
+  final Function(DestinationItem) onDestinationSelected;
+
+  const _DestinationPickerSheet({required this.onDestinationSelected});
+
+  @override
+  State<_DestinationPickerSheet> createState() => _DestinationPickerSheetState();
+}
+
+class _DestinationPickerSheetState extends State<_DestinationPickerSheet> {
+  String selectedCategory = 'All';
+  final TextEditingController _searchController = TextEditingController();
+  
+  final List<String> categories = ['All', 'Foodie', 'Nature', 'Culture', 'Adventure', 'Arts', 'Budget', 'Chill'];
+  
+  final List<DestinationItem> allDestinations = const [
+    DestinationItem(
+      id: 'jaro-cathedral',
+      name: 'Jaro Cathedral',
+      district: 'Jaro District',
+      category: 'Culture',
+      image: 'assets/images/jaroCathedral.jpg',
+    ),
+    DestinationItem(
+      id: 'molo-church',
+      name: 'Molo Church',
+      district: 'Molo District',
+      category: 'Culture',
+      image: 'assets/images/moloChurch.jpg',
+    ),
+    DestinationItem(
+      id: 'isla-higantes',
+      name: 'Isla Higantes',
+      district: 'Carles',
+      category: 'Nature',
+      image: 'assets/images/islan higantes.png',
+    ),
+    DestinationItem(
+      id: 'guimaras-island',
+      name: 'Guimaras Island',
+      district: 'Guimaras',
+      category: 'Nature',
+      image: '',
+    ),
+    DestinationItem(
+      id: 'netongs-batchoy',
+      name: "Netong's Batchoy",
+      district: 'La Paz',
+      category: 'Food',
+      image: 'assets/images/netongsBatchoy.jpg',
+    ),
+    DestinationItem(
+      id: 'breakthrough-restaurant',
+      name: 'Breakthrough Restaurant',
+      district: 'Villa Beach',
+      category: 'Food',
+      image: '',
+    ),
+    DestinationItem(
+      id: 'esplanade',
+      name: 'Esplanade',
+      district: 'Iloilo City',
+      category: 'Leisure',
+      image: 'assets/images/esplanadeWalk.jpg',
+    ),
+    DestinationItem(
+      id: 'mieg-ao-church',
+      name: 'Mieg-ao Church',
+      district: 'Mieg-ao',
+      category: 'Culture',
+      image: '',
+    ),
+    DestinationItem(
+      id: 'garin-farm',
+      name: 'Garin Farm',
+      district: 'San Joaquin',
+      category: 'Nature',
+      image: '',
+    ),
+    DestinationItem(
+      id: 'museo-iloilo',
+      name: 'Museo Iloilo',
+      district: 'Iloilo City',
+      category: 'Culture',
+      image: '',
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<DestinationItem> get filteredDestinations {
+    var filtered = allDestinations;
+    
+    if (selectedCategory != 'All') {
+      filtered = filtered.where((dest) => 
+        dest.category.toLowerCase() == selectedCategory.toLowerCase()
+      ).toList();
+    }
+    
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      filtered = filtered.where((dest) =>
+        dest.name.toLowerCase().contains(query) ||
+        dest.district.toLowerCase().contains(query)
+      ).toList();
+    }
+    
+    return filtered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white24 : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Choose Destination',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          // Search
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: 'Search destinations...',
+                prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.grey),
+                filled: true,
+                fillColor: isDark ? AppTheme.darkCard : Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              style: TextStyle(color: isDark ? Colors.white : Colors.black),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Category chips
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isSelected = selectedCategory == category;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () => setState(() => selectedCategory = category),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
+                            : (isDark ? AppTheme.darkCard : Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Destinations list
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: filteredDestinations.length,
+              itemBuilder: (context, index) {
+                final destination = filteredDestinations[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: InkWell(
+                    onTap: () {
+                      widget.onDestinationSelected(destination);
+                      Navigator.pop(context);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppTheme.darkCard : Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: destination.image.isNotEmpty
+                                ? Image.asset(
+                                    destination.image,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: AppTheme.teal.withOpacity(0.2),
+                                      child: const Icon(Icons.place, color: AppTheme.teal),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 60,
+                                    height: 60,
+                                    color: AppTheme.teal.withOpacity(0.2),
+                                    child: const Icon(Icons.place, color: AppTheme.teal),
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  destination.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    color: isDark ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(
+                                      destination.district,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '•',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white60 : Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF3A3A3A) : AppTheme.teal.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        destination.category,
+                                        style: TextStyle(
+                                          color: isDark ? AppTheme.darkAccent : AppTheme.teal,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.info_outline, color: isDark ? AppTheme.darkAccent : AppTheme.teal),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(
+                                context,
+                                MoreInfoScreen.route,
+                                arguments: destination.id,
+                              );
+                            },
+                            tooltip: 'View details',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
