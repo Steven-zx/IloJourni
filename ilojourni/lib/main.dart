@@ -18,11 +18,13 @@ import 'screens/trip_budget_tracker_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/theme_service.dart';
 import 'services/saved_trips_store.dart';
+import 'services/favorites_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await SavedTripsStore.instance.initialize();
+  await FavoritesStore.instance.initialize();
   runApp(const MyApp());
 }
 

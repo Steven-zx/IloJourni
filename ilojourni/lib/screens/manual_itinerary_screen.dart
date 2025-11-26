@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/saved_trips_store.dart';
-import 'home_shell.dart';
+import '../models/destination.dart';
 import 'more_info_screen.dart';
 import 'trip_detail_screen.dart';
 
@@ -178,12 +178,42 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
 
     final budget = int.tryParse(_budgetController.text) ?? 0;
 
+    // Create itinerary from manual data  
+    final manualDays = days.map((day) {
+      return DayPlan(
+        dayNumber: day.dayNumber,
+        theme: 'Day ${day.dayNumber}',
+        totalCost: 0,
+        activities: day.destinations.map((dest) {
+          return Activity(
+            type: 'destination',
+            name: dest.name,
+            description: dest.name,
+            time: 'TBD',
+            cost: 0,
+            location: dest.district,
+            tags: [dest.category],
+            image: dest.image,
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    final manualItinerary = GeneratedItinerary(
+      title: _titleController.text,
+      totalBudget: budget,
+      totalCost: 0,
+      summary: 'Custom manually created itinerary',
+      days: manualDays,
+    );
+
     // Save to SavedTripsStore
     SavedTripsStore.add(SavedTrip(
       title: _titleController.text,
       dateRange: 'Custom Trip • ${days.length} days',
       budget: budget,
       image: days.first.destinations.isNotEmpty ? days.first.destinations.first.image : '',
+      itinerary: manualItinerary,
     ));
 
     // Navigate to TripDetailScreen

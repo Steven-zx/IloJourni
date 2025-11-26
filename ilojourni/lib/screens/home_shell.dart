@@ -3,6 +3,7 @@ import '../services/auth_state.dart';
 import 'dashboard_screen.dart';
 import 'explore_screen.dart';
 import 'saved_trips_screen.dart';
+import 'favorites_screen.dart';
 import 'profile_guest_screen.dart';
 import 'profile_signed_screen.dart';
 
@@ -24,6 +25,7 @@ class _HomeShellState extends State<HomeShell> {
       const DashboardScreen(),
       const ExploreScreen(),
       const SavedTripsScreen(),
+      const FavoritesScreen(),
       Builder(
         builder: (context) => AuthState.isSignedIn ? const ProfileSignedScreen() : const ProfileGuestScreen(),
       ),
@@ -52,6 +54,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Saved',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_outline),
+            selectedIcon: Icon(Icons.favorite),
+            label: 'Favorites',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

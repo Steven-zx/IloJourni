@@ -117,7 +117,7 @@ class _SavedTripsScreenState extends State<SavedTripsScreen> {
                                 ),
                               );
                               if (confirm == true) {
-                                await SavedTripsStore.instance.removeAt(index);
+                                await SavedTripsStore.removeAt(index);
                               }
                             },
                             isDark: isDark,

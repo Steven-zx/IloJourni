@@ -22,7 +22,6 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     
     final GeneratedItinerary? itinerary = args?['itinerary'] as GeneratedItinerary?;
-    final String budget = args?['budget'] as String? ?? '₱0';
     final int days = args?['days'] as int? ?? 1;
     
     // If no itinerary was generated, show error

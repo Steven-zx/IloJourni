@@ -70,7 +70,7 @@ class _BudgetTrackerScreenState extends State<BudgetTrackerScreen> {
                     color: isDark ? Colors.white38 : Colors.grey[400],
                   ),
                   filled: true,
-                  fillColor: isDark ? AppTheme.darkBg : Colors.grey[50],
+                  fillColor: isDark ? AppTheme.darkBackground : Colors.grey[50],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
