@@ -33,7 +33,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final days = _itinerary!.days;
     if (_selectedDay == 'All') {
       for (final day in days) {
-        widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities planned', isDark: isDark));
+        widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities • ₱${day.totalCost} total', isDark: isDark));
         widgets.add(const SizedBox(height: 12));
         for (int i = 0; i < day.activities.length; i++) {
           final act = day.activities[i];
@@ -56,7 +56,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     } else {
       final dayNumber = int.parse(_selectedDay.split(' ')[1]);
       final day = days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => days.first);
-      widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities planned', isDark: isDark));
+      widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities • ₱${day.totalCost} total', isDark: isDark));
       widgets.add(const SizedBox(height: 12));
       for (int i = 0; i < day.activities.length; i++) {
         final act = day.activities[i];
@@ -89,6 +89,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final tripDays = itinerary?.days.length ?? 1;
     final tripSpots = itinerary?.days.fold<int>(0, (sum, d) => sum + d.activities.length) ?? 0;
     final tripBudget = trip?.budget ?? itinerary?.totalBudget ?? 0;
+    final tripTotalCost = itinerary?.totalCost ?? 0;
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
@@ -200,6 +201,17 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                             icon: Icons.wallet,
                             label: 'Budget',
                             value: '₱$tripBudget',
+                            isDark: isDark,
+                          ),
+                          Container(
+                            height: 40,
+                            width: 1,
+                            color: isDark ? Colors.white12 : Colors.grey[300],
+                          ),
+                          _SummaryItem(
+                            icon: Icons.payments,
+                            label: 'Total Cost',
+                            value: '₱$tripTotalCost',
                             isDark: isDark,
                           ),
                         ],

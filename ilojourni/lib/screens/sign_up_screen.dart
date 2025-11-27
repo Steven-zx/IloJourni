@@ -166,7 +166,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Center(child: Text('OR', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: Colors.black38))),
               const SizedBox(height: 16),
               OutlinedButton(
-                onPressed: () {
+                onPressed: () async {
+                  await AuthService.instance.signOut();
+                  if (!mounted) return;
                   Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
                 },
                 child: const Text('Continue as a guest'),

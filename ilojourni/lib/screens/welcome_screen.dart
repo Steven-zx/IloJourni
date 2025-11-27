@@ -73,6 +73,7 @@ class WelcomeScreen extends StatelessWidget {
                       child: const Text('Get Started'),
                     ),
                   ),
+                  // Guest option intentionally removed; available after Get Started
                 ],
               ),
             ),

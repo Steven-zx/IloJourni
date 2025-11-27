@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/saved_trips_store.dart';
 import '../models/destination.dart';
+import '../data/destinations_database.dart';
 import 'more_info_screen.dart';
 import 'trip_detail_screen.dart';
 
@@ -49,11 +50,9 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
   final TextEditingController _budgetController = TextEditingController(text: '0');
   List<ItineraryDay> days = [
     ItineraryDay(dayNumber: 1),
-    ItineraryDay(dayNumber: 2),
-    ItineraryDay(dayNumber: 3),
   ];
   int selectedDayIndex = 0;
-  final Map<int, bool> _expandedDays = {0: true, 1: false, 2: false};
+  final Map<int, bool> _expandedDays = {0: true};
 
   @override
   void dispose() {
@@ -157,6 +156,37 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     return days.fold(0, (sum, day) => sum + day.destinations.length);
   }
 
+  // Reusable cost calculator matching logic used in itinerary creation
+  int _calculateDestinationCost(DestinationItem dest) {
+    final dbItem = DestinationsDatabase.getById(dest.id);
+    int cost = dbItem?.entranceFee ?? 0; // base entrance
+    switch (dest.category.toLowerCase()) {
+      case 'food': // specific known establishments overrides
+        if (dest.id == 'netongs-batchoy') return 200;
+        if (dest.id == 'robertos-siopao') return 150;
+        if (dest.id == 'breakthrough-restaurant') return 450;
+        if (dest.id == 'madge-cafe') return 120;
+        return 200; // default meal estimate
+      case 'leisure':
+        return cost; // promenades typically free
+      case 'nature':
+        if (dbItem != null && dbItem.entranceFee > 0) return dbItem.entranceFee;
+        if (dest.id == 'isla-higantes') return 100; // environmental/local fee
+        if (dest.id == 'guimaras-island') return 0; // open access
+        return 50; // modest default
+      case 'culture':
+        return dbItem?.entranceFee ?? 0;
+      case 'shopping':
+        return 0; // user-driven spend not auto-estimated
+      default:
+        return cost;
+    }
+  }
+
+  int _computeTotalCost() {
+    return days.fold(0, (sum, day) => sum + day.destinations.fold(0, (dSum, dest) => dSum + _calculateDestinationCost(dest)));
+  }
+
   void _showDestinationPicker() {
     showModalBottomSheet(
       context: context,
@@ -177,32 +207,35 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     }
 
     final budget = int.tryParse(_budgetController.text) ?? 0;
-
-    // Create itinerary from manual data  
+    // Build days with computed activity costs and totals
     final manualDays = days.map((day) {
+      final activities = day.destinations.map((dest) {
+        final cost = _calculateDestinationCost(dest);
+        return Activity(
+          type: 'destination',
+          name: dest.name,
+          description: dest.name,
+          time: 'TBD',
+          cost: cost,
+          location: dest.district,
+          tags: [dest.category],
+          image: dest.image,
+        );
+      }).toList();
+      final totalCost = activities.fold<int>(0, (sum, a) => sum + a.cost);
       return DayPlan(
         dayNumber: day.dayNumber,
         theme: 'Day ${day.dayNumber}',
-        totalCost: 0,
-        activities: day.destinations.map((dest) {
-          return Activity(
-            type: 'destination',
-            name: dest.name,
-            description: dest.name,
-            time: 'TBD',
-            cost: 0,
-            location: dest.district,
-            tags: [dest.category],
-            image: dest.image,
-          );
-        }).toList(),
+        activities: activities,
+        totalCost: totalCost,
       );
     }).toList();
 
+    final itineraryTotalCost = manualDays.fold<int>(0, (sum, d) => sum + d.totalCost);
     final manualItinerary = GeneratedItinerary(
       title: _titleController.text,
       totalBudget: budget,
-      totalCost: 0,
+      totalCost: itineraryTotalCost,
       summary: 'Custom manually created itinerary',
       days: manualDays,
     );
@@ -210,7 +243,7 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     // Save to SavedTripsStore
     SavedTripsStore.add(SavedTrip(
       title: _titleController.text,
-      dateRange: 'Custom Trip • ${days.length} days',
+      dateRange: 'Custom Trip • ${days.length} day${days.length == 1 ? '' : 's'}',
       budget: budget,
       image: days.first.destinations.isNotEmpty ? days.first.destinations.first.image : '',
       itinerary: manualItinerary,
@@ -238,6 +271,7 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final totalDestinations = _getTotalDestinations();
     final budget = int.tryParse(_budgetController.text) ?? 0;
+    final totalCost = _computeTotalCost();
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
@@ -310,35 +344,13 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: _StatBadge(
-                            icon: Icons.event,
-                            value: '${days.length}',
-                            label: 'days',
-                            isDark: isDark,
-                          ),
-                        ),
+                        Expanded(child: _StatBadge(icon: Icons.event, value: '${days.length}', label: 'days', isDark: isDark)),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: _StatBadge(
-                            icon: Icons.place,
-                            value: '$totalDestinations',
-                            label: 'stops',
-                            isDark: isDark,
-                          ),
-                        ),
+                        Expanded(child: _StatBadge(icon: Icons.place, value: '$totalDestinations', label: 'stops', isDark: isDark)),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => _showBudgetDialog(),
-                            child: _StatBadge(
-                              icon: Icons.account_balance_wallet,
-                              value: 'P$budget',
-                              label: 'budget',
-                              isDark: isDark,
-                            ),
-                          ),
-                        ),
+                        Expanded(child: GestureDetector(onTap: () => _showBudgetDialog(), child: _StatBadge(icon: Icons.account_balance_wallet, value: 'P$budget', label: 'budget', isDark: isDark))),
+                        const SizedBox(width: 12),
+                        Expanded(child: _StatBadge(icon: Icons.payments, value: 'P$totalCost', label: 'cost', isDark: isDark)),
                       ],
                     ),
                   ),
