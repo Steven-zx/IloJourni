@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/placeholder_image.dart';
 import 'trip_budget_tracker_screen.dart';
+import 'trip_map_view.dart';
+import '../data/destinations_data.dart';
 
 class TripDetailScreen extends StatefulWidget {
   const TripDetailScreen({super.key});
@@ -15,83 +17,77 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   String _selectedView = 'List'; // 'List' or 'Map'
   String _selectedDay = 'All';
 
-  List<Widget> _buildFilteredContent(bool isDark) {
-    final allContent = [
-      // Day 1 content
-      {'day': 1, 'widget': _DayHeader(day: 'Day 1', dayNumber: 1, subtitle: '2 activities planned', isDark: isDark)},
-      {'day': 1, 'widget': const SizedBox(height: 12)},
-      {'day': 1, 'widget': _ActivityCard(
-        number: 1,
-        day: 1,
-        title: 'Jaro Cathedral',
-        image: 'assets/images/jaroCathedral.jpg',
-        imageColor: const Color(0xFFE8B86D),
-        description: 'Start your day with a visit to Jaro Cathedral, one of Iloilo\'s most historic churches known for its grand architecture and the miraculous Our Lady of Candles.',
-        time: '1 hour',
-        location: 'Jaro, Iloilo City',
-        price: 'Free Entry',
-        tags: const ['Culture', 'Arts'],
-        isDark: isDark,
-      )},
-      {'day': 1, 'widget': const SizedBox(height: 12)},
-      {'day': 1, 'widget': _RideCard(
-        line: 'Ride: Ungka',
-        details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 15',
-        day: 1,
-        isDark: isDark,
-      )},
-      {'day': 1, 'widget': const SizedBox(height: 12)},
-      {'day': 1, 'widget': _ActivityCard(
-        number: 2,
-        day: 1,
-        title: 'Netong\'s',
-        image: 'assets/images/netongsBatchoy.jpg',
-        imageColor: const Color(0xFFE67E22),
-        description: 'Grab brunch at Netong\'s, the home of the original La Paz Batchoy — a comforting bowl of Ilonggo goodness.',
-        time: '1 hour',
-        location: 'La Paz Public Market',
-        price: '₱ 150-200',
-        tags: const ['Culture', 'Arts'],
-        isDark: isDark,
-      )},
-      {'day': 1, 'widget': const SizedBox(height: 12)},
-      {'day': 1, 'widget': _RideCard(
-        line: 'Ride: Ungka',
-        details: 'Jeep • E-Bus   2-3 hours   Fare: ₱ 12-15',
-        day: 1,
-        isDark: isDark,
-      )},
-      {'day': 1, 'widget': const SizedBox(height: 12)},
-      {'day': 1, 'widget': _ActivityCard(
-        number: 3,
-        day: 1,
-        title: 'Roberto\'s',
-        image: 'assets/images/robertos.jpg',
-        imageColor: const Color(0xFF2C3E50),
-        description: 'For lunch, try Roberto\'s famous Grawn Siopao — a local favorite packed with rich flavors.',
-        time: '1 hour',
-        location: 'Iloilo City Proper',
-        price: '₱ 100-250',
-        tags: const ['Culture', 'Arts'],
-        isDark: isDark,
-      )},
-    ];
+  SavedTrip? get _trip {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is SavedTrip) return args;
+    return null;
+  }
 
+  GeneratedItinerary? get _itinerary => _trip?.itinerary;
+
+  List<Widget> _buildFilteredContent(bool isDark) {
+    if (_itinerary == null) return [];
+    final widgets = <Widget>[];
+    final days = _itinerary!.days;
     if (_selectedDay == 'All') {
-      return allContent.map((item) => item['widget'] as Widget).toList();
+      for (final day in days) {
+        widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities planned', isDark: isDark));
+        widgets.add(const SizedBox(height: 12));
+        for (int i = 0; i < day.activities.length; i++) {
+          final act = day.activities[i];
+          widgets.add(_ActivityCard(
+            number: i + 1,
+            day: day.dayNumber,
+            title: act.name,
+            image: act.image ?? '',
+            imageColor: const Color(0xFFE8B86D),
+            description: act.description,
+            time: act.time,
+            location: act.location ?? '',
+            price: '₱ ${act.cost}',
+            tags: act.tags ?? [],
+            isDark: isDark,
+          ));
+          widgets.add(const SizedBox(height: 12));
+        }
+      }
     } else {
       final dayNumber = int.parse(_selectedDay.split(' ')[1]);
-      return allContent
-          .where((item) => item['day'] == dayNumber)
-          .map((item) => item['widget'] as Widget)
-          .toList();
+      final day = days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => days.first);
+      widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities planned', isDark: isDark));
+      widgets.add(const SizedBox(height: 12));
+      for (int i = 0; i < day.activities.length; i++) {
+        final act = day.activities[i];
+        widgets.add(_ActivityCard(
+          number: i + 1,
+          day: day.dayNumber,
+          title: act.name,
+          image: act.image ?? '',
+          imageColor: const Color(0xFFE8B86D),
+          description: act.description,
+          time: act.time,
+          location: act.location ?? '',
+          price: '₱ ${act.cost}',
+          tags: act.tags ?? [],
+          isDark: isDark,
+        ));
+        widgets.add(const SizedBox(height: 12));
+      }
     }
+    return widgets;
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
+    final trip = _trip;
+    final itinerary = _itinerary;
+    final tripTitle = trip?.title ?? itinerary?.title ?? 'Trip';
+    final tripDays = itinerary?.days.length ?? 1;
+    final tripSpots = itinerary?.days.fold<int>(0, (sum, d) => sum + d.activities.length) ?? 0;
+    final tripBudget = trip?.budget ?? itinerary?.totalBudget ?? 0;
+
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
       body: Column(
@@ -115,10 +111,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Trip Name',
-                            style: TextStyle(
+                            tripTitle,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
@@ -179,7 +175,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           _SummaryItem(
                             icon: Icons.calendar_today,
                             label: 'Duration',
-                            value: '1 Day',
+                            value: '$tripDays Day${tripDays > 1 ? 's' : ''}',
                             isDark: isDark,
                           ),
                           Container(
@@ -188,73 +184,74 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                             color: isDark ? Colors.white12 : Colors.grey[300],
                           ),
                           _SummaryItem(
-                            icon: Icons.place_outlined,
-                            label: 'Places',
-                            value: '7 Spots',
-                            isDark: isDark,
-                          ),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: isDark ? Colors.white12 : Colors.grey[300],
-                          ),
-                          _SummaryItem(
-                            icon: Icons.payments_outlined,
-                            label: 'Budget',
-                            value: '₱ 3000',
-                            isDark: isDark,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Day filter chips
-                  Container(
-                    height: 50,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        _DayChip(
-                          label: 'All',
-                          isSelected: _selectedDay == 'All',
-                          onTap: () => setState(() => _selectedDay = 'All'),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 1',
-                          isSelected: _selectedDay == 'Day 1',
-                          onTap: () => setState(() => _selectedDay = 'Day 1'),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 2',
-                          isSelected: _selectedDay == 'Day 2',
-                          onTap: () => setState(() => _selectedDay = 'Day 2'),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 3',
-                          isSelected: _selectedDay == 'Day 3',
-                          onTap: () => setState(() => _selectedDay = 'Day 3'),
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Content
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: _buildFilteredContent(isDark),
+                            return Scaffold(
+                              backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
+                              body: Column(
+                                children: [
+                                  // Teal header
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+                                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                                    ),
+                                    child: SafeArea(
+                                      bottom: false,
+                                      child: Column(
+                                        children: [
+                                          // ...existing code...
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Day filter chips and content
+                                  if (_selectedView == 'List') ...[
+                                    Container(
+                                      height: 50,
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      child: ListView(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        children: [
+                                          _DayChip(
+                                            label: 'All',
+                                            isSelected: _selectedDay == 'All',
+                                            onTap: () => setState(() => _selectedDay = 'All'),
+                                            isDark: isDark,
+                                          ),
+                                          ...List.generate(
+                                            itinerary?.days.length ?? 0,
+                                            (i) => Padding(
+                                              padding: const EdgeInsets.only(left: 8),
+                                              child: _DayChip(
+                                                label: 'Day ${i + 1}',
+                                                isSelected: _selectedDay == 'Day ${i + 1}',
+                                                onTap: () => setState(() => _selectedDay = 'Day ${i + 1}'),
+                                                isDark: isDark,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: ListView(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        children: _buildFilteredContent(isDark),
+                                      ),
+                                    ),
+                                  ]
+                                  else ...[
+                                    // Map View
+                                    Expanded(
+                                      child: TripMapView(
+                                        itinerary: itinerary,
+                                        destinations: allDestinations,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
             ),
           ),
           // Budget Tracker Button
