@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'screens/welcome_screen.dart';
@@ -24,12 +26,35 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
   await SavedTripsStore.instance.initialize();
   await FavoritesStore.instance.initialize();
   await ConnectivityService.instance.initialize();
   await AuthService.instance.initialize();
   runApp(const MyApp());
+
+  // Example Firestore usage: add a destination and read all destinations
+  // Uncomment to test Firestore
+  // await firestoreExample();
+}
+
+// Example Firestore usage: add a destination and read all destinations
+Future<void> firestoreExample() async {
+  final destinations = FirebaseFirestore.instance.collection('destinations');
+  // Add a sample destination
+  await destinations.add({
+    'name': 'SM City Iloilo',
+    'latitude': 10.7136,
+    'longitude': 122.5536,
+    'category': 'Shopping',
+  });
+  // Read all destinations
+  final snapshot = await destinations.get();
+  for (var doc in snapshot.docs) {
+    print('Destination: ${doc.data()}');
+  }
+}
 }
 
 class MyApp extends StatefulWidget {
