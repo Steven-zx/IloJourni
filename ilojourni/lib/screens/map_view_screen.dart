@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pin_marker.dart';
+import '../data/destinations_database.dart';
 
 class DestinationMapPoint {
   final int number;
@@ -14,21 +16,23 @@ class MapViewScreen extends StatelessWidget {
   static const route = '/map-view';
   const MapViewScreen({super.key});
 
-  // Example destination data (replace with your actual data)
-  List<DestinationMapPoint> get _destinations => [
-    DestinationMapPoint(number: 1, name: 'Jaro Cathedral', location: LatLng(10.7202, 122.5621)),
-    DestinationMapPoint(number: 2, name: 'Molo Church', location: LatLng(10.6978, 122.5611)),
-    DestinationMapPoint(number: 3, name: 'Esplanade Walk', location: LatLng(10.7125, 122.5557)),
-    DestinationMapPoint(number: 4, name: 'Isla Higantes', location: LatLng(11.5000, 123.2000)),
-    DestinationMapPoint(number: 5, name: 'Netong\'s Batchoy', location: LatLng(10.7082, 122.5675)),
-    DestinationMapPoint(number: 6, name: 'Molo Mansion', location: LatLng(10.6975, 122.5615)),
-    DestinationMapPoint(number: 7, name: 'Garin Farm', location: LatLng(10.5850, 122.4380)),
-    DestinationMapPoint(number: 8, name: 'Miag-ao Church', location: LatLng(10.6431, 122.2356)),
-    DestinationMapPoint(number: 9, name: 'WaterWorld Iloilo', location: LatLng(10.7482, 122.5852)),
-  ];
+  // Build a single waypoint for the provided destination id
+  DestinationMapPoint? _pointFor(String? id) {
+    if (id == null) return null;
+    final d = DestinationsDatabase.getById(id);
+    if (d == null) return null;
+    return DestinationMapPoint(
+      number: 1,
+      name: d.name,
+      location: LatLng(d.latitude, d.longitude),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final destId = ModalRoute.of(context)?.settings.arguments as String?;
+    final singlePoint = _pointFor(destId);
+    final center = singlePoint?.location ?? const LatLng(10.7202, 122.5621);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Map View'),
@@ -36,70 +40,30 @@ class MapViewScreen extends StatelessWidget {
       ),
       body: FlutterMap(
         options: MapOptions(
-          center: LatLng(10.7202, 122.5621),
+          center: center,
           zoom: 12.5,
         ),
         children: [
           TileLayer(
-            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            subdomains: const ['a', 'b', 'c'],
-            tileBuilder: (context, tile, child) => ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: child,
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.ilojourni.app',
+            keepBuffer: 2,
+            panBuffer: 0,
+          ),
+          if (singlePoint != null)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  width: 28,
+                  height: 56,
+                  alignment: Alignment.bottomCenter,
+                  point: singlePoint.location,
+                  child: const PinMarker(number: 1, size: 28),
+                ),
+              ],
             ),
-          ),
-          MarkerLayer(
-            markers: _destinations.map((dest) => Marker(
-              width: 60,
-              height: 60,
-              point: dest.location,
-              builder: (ctx) => _NumberedMarker(number: dest.number, label: dest.name),
-            )).toList(),
-          ),
         ],
       ),
-    );
-  }
-}
-
-class _NumberedMarker extends StatelessWidget {
-  final int number;
-  final String label;
-  const _NumberedMarker({required this.number, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-            border: Border.all(color: AppTheme.teal, width: 2),
-          ),
-          child: Text(
-            number.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.teal),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(top: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2)],
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 10, color: Colors.black87),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
     );
   }
 }

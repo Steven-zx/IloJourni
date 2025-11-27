@@ -1,5 +1,8 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+# Suppress deprecation and developer warnings originating from third-party CMakeLists
+set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "Disable deprecated warnings" FORCE)
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "Suppress developer warnings from dependencies")
 project(ilojourni LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

@@ -154,7 +154,10 @@ class _SignInScreenState extends State<SignInScreen> {
               Center(child: Text('OR', style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(color: Colors.black38))),
               const SizedBox(height: 16),
               OutlinedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                onPressed: () {
+                  // Enter the app without an account
+                  Navigator.pushNamedAndRemoveUntil(context, HomeShell.route, (route) => false);
+                },
                 child: const Text('Continue as a guest'),
               ),
                   ],

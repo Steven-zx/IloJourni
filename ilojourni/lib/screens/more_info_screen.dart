@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pin_marker.dart';
+import 'map_view_screen.dart';
+import '../data/destinations_database.dart';
 
 class LocationData {
   final String title;
@@ -206,16 +211,66 @@ class MoreInfoScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          height: 140,
-                          color: AppTheme.lightGrey,
-                          alignment: Alignment.center,
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                        child: SizedBox(
+                          height: 180,
+                          child: Stack(
                             children: [
-                              Icon(Icons.map, size: 40, color: Colors.black26),
-                              SizedBox(height: 8),
-                              Text('Map View', style: TextStyle(color: Colors.black38)),
+                              Builder(builder: (context) {
+                                final dest = DestinationsDatabase.getById(locationId);
+                                final center = dest != null
+                                    ? LatLng(dest.latitude, dest.longitude)
+                                    : const LatLng(10.7202, 122.5621);
+                                return FlutterMap(
+                                  options: MapOptions(
+                                    center: center,
+                                    zoom: 14,
+                                    interactionOptions: const InteractionOptions(
+                                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                                    ),
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      userAgentPackageName: 'com.ilojourni.app',
+                                      keepBuffer: 2,
+                                      panBuffer: 0,
+                                    ),
+                                    if (dest != null)
+                                      MarkerLayer(
+                                        markers: [
+                                          Marker(
+                                            point: center,
+                                            width: 26,
+                                            height: 52,
+                                            alignment: Alignment.bottomCenter,
+                                            child: const PinMarker(size: 26),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                );
+                              }),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: AppTheme.teal,
+                                      elevation: 2,
+                                      minimumSize: const Size(0, 40),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pushNamed(context, MapViewScreen.route, arguments: locationId);
+                                    },
+                                    icon: const Icon(Icons.fullscreen),
+                                    label: const Text('Full Map'),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -257,6 +312,8 @@ class MoreInfoScreen extends StatelessWidget {
     );
   }
 }
+
+// removed old _WaypointIcon in favor of PinMarker
 
 class _Chip extends StatelessWidget {
   const _Chip({required this.text});

@@ -4,6 +4,8 @@ import '../widgets/placeholder_image.dart';
 import 'trip_budget_tracker_screen.dart';
 import 'trip_map_view.dart';
 import '../data/destinations_data.dart';
+import '../services/saved_trips_store.dart';
+import '../models/destination.dart';
 
 class TripDetailScreen extends StatefulWidget {
   const TripDetailScreen({super.key});
@@ -184,76 +186,76 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                             color: isDark ? Colors.white12 : Colors.grey[300],
                           ),
                           _SummaryItem(
-                            return Scaffold(
-                              backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
-                              body: Column(
-                                children: [
-                                  // Teal header
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: isDark ? AppTheme.darkTeal : AppTheme.teal,
-                                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                                    ),
-                                    child: SafeArea(
-                                      bottom: false,
-                                      child: Column(
-                                        children: [
-                                          // ...existing code...
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Day filter chips and content
-                                  if (_selectedView == 'List') ...[
-                                    Container(
-                                      height: 50,
-                                      margin: const EdgeInsets.only(bottom: 16),
-                                      child: ListView(
-                                        scrollDirection: Axis.horizontal,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                                        children: [
-                                          _DayChip(
-                                            label: 'All',
-                                            isSelected: _selectedDay == 'All',
-                                            onTap: () => setState(() => _selectedDay = 'All'),
-                                            isDark: isDark,
-                                          ),
-                                          ...List.generate(
-                                            itinerary?.days.length ?? 0,
-                                            (i) => Padding(
-                                              padding: const EdgeInsets.only(left: 8),
-                                              child: _DayChip(
-                                                label: 'Day ${i + 1}',
-                                                isSelected: _selectedDay == 'Day ${i + 1}',
-                                                onTap: () => setState(() => _selectedDay = 'Day ${i + 1}'),
-                                                isDark: isDark,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: ListView(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        children: _buildFilteredContent(isDark),
-                                      ),
-                                    ),
-                                  ]
-                                  else ...[
-                                    // Map View
-                                    Expanded(
-                                      child: TripMapView(
-                                        itinerary: itinerary,
-                                        destinations: allDestinations,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            );
+                            icon: Icons.place,
+                            label: 'Spots',
+                            value: '$tripSpots',
+                            isDark: isDark,
+                          ),
+                          Container(
+                            height: 40,
+                            width: 1,
+                            color: isDark ? Colors.white12 : Colors.grey[300],
+                          ),
+                          _SummaryItem(
+                            icon: Icons.wallet,
+                            label: 'Budget',
+                            value: '₱$tripBudget',
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          // Day filter chips and content
+          if (_selectedView == 'List') ...[
+            Container(
+              height: 50,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _DayChip(
+                    label: 'All',
+                    isSelected: _selectedDay == 'All',
+                    onTap: () => setState(() => _selectedDay = 'All'),
+                    isDark: isDark,
+                  ),
+                  ...List.generate(
+                    itinerary?.days.length ?? 0,
+                    (i) => Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _DayChip(
+                        label: 'Day ${i + 1}',
+                        isSelected: _selectedDay == 'Day ${i + 1}',
+                        onTap: () => setState(() => _selectedDay = 'Day ${i + 1}'),
+                        isDark: isDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                children: _buildFilteredContent(isDark),
+              ),
+            ),
+          ]
+          else ...[
+            // Map View
+            Expanded(
+              child: TripMapView(
+                itinerary: itinerary,
+                destinations: allDestinations,
+              ),
+            ),
+          ],
           // Budget Tracker Button
           Padding(
             padding: const EdgeInsets.all(16),

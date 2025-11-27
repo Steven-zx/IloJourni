@@ -32,17 +32,19 @@ class _TripMapView extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-          subdomains: const ['a', 'b', 'c'],
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.ilojourni.app',
+          keepBuffer: 2,
+          panBuffer: 0,
         ),
         MarkerLayer(
           markers: [
             for (int i = 0; i < waypoints.length; i++)
               Marker(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 point: waypoints[i],
-                builder: (ctx) => _NumberedMarker(number: i + 1),
+                child: _NumberedMarker(number: i + 1),
               ),
           ],
         ),
@@ -58,16 +60,18 @@ class _NumberedMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-        border: Border.all(color: AppTheme.teal, width: 2),
+        color: AppTheme.navy,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 1))],
       ),
-      padding: const EdgeInsets.all(8),
+      alignment: Alignment.center,
       child: Text(
         number.toString(),
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.teal),
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
       ),
     );
   }
