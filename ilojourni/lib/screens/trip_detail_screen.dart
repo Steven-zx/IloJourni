@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 import '../widgets/placeholder_image.dart';
 import 'trip_budget_tracker_screen.dart';
 import 'trip_map_view.dart';
-import '../data/destinations_data.dart';
+import '../data/destinations_database.dart';
 import '../services/saved_trips_store.dart';
 import '../models/destination.dart';
 
@@ -172,48 +172,15 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ],
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      child: Wrap(
+                        spacing: 16,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.spaceAround,
                         children: [
-                          _SummaryItem(
-                            icon: Icons.calendar_today,
-                            label: 'Duration',
-                            value: '$tripDays Day${tripDays > 1 ? 's' : ''}',
-                            isDark: isDark,
-                          ),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: isDark ? Colors.white12 : Colors.grey[300],
-                          ),
-                          _SummaryItem(
-                            icon: Icons.place,
-                            label: 'Spots',
-                            value: '$tripSpots',
-                            isDark: isDark,
-                          ),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: isDark ? Colors.white12 : Colors.grey[300],
-                          ),
-                          _SummaryItem(
-                            icon: Icons.wallet,
-                            label: 'Budget',
-                            value: '₱$tripBudget',
-                            isDark: isDark,
-                          ),
-                          Container(
-                            height: 40,
-                            width: 1,
-                            color: isDark ? Colors.white12 : Colors.grey[300],
-                          ),
-                          _SummaryItem(
-                            icon: Icons.payments,
-                            label: 'Total Cost',
-                            value: '₱$tripTotalCost',
-                            isDark: isDark,
-                          ),
+                          _SummaryItem(icon: Icons.calendar_today, label: 'Duration', value: '$tripDays Day${tripDays > 1 ? 's' : ''}', isDark: isDark),
+                          _SummaryItem(icon: Icons.place, label: 'Spots', value: '$tripSpots', isDark: isDark),
+                          _SummaryItem(icon: Icons.wallet, label: 'Budget', value: '₱$tripBudget', isDark: isDark),
+                          _SummaryItem(icon: Icons.payments, label: 'Total Cost', value: '₱$tripTotalCost', isDark: isDark),
                         ],
                       ),
                     ),
@@ -264,7 +231,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             Expanded(
               child: TripMapView(
                 itinerary: itinerary,
-                destinations: allDestinations,
+                destinations: DestinationsDatabase.allDestinations,
               ),
             ),
           ],
@@ -521,6 +488,22 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fallback: if image is empty, try lookup by name in DestinationsDatabase
+    String resolvedImage = image;
+    if (resolvedImage.isEmpty) {
+      try {
+        final match = DestinationsDatabase.allDestinations.firstWhere(
+          (d) => d.name.toLowerCase() == title.toLowerCase(),
+          orElse: () => DestinationsDatabase.allDestinations.firstWhere(
+            (d) => d.name.toLowerCase().contains(title.toLowerCase()),
+            orElse: () => DestinationsDatabase.allDestinations.first,
+          ),
+        );
+        if (match.image.isNotEmpty) {
+          resolvedImage = match.image;
+        }
+      } catch (_) {}
+    }
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkCard : Colors.white,
@@ -540,7 +523,7 @@ class _ActivityCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: image.isEmpty
+                child: resolvedImage.isEmpty
                     ? PlaceholderImage(
                         height: 150,
                         width: double.infinity,
@@ -548,7 +531,7 @@ class _ActivityCard extends StatelessWidget {
                         color: imageColor,
                       )
                     : Image.asset(
-                        image,
+                        resolvedImage,
                         height: 150,
                         width: double.infinity,
                         fit: BoxFit.cover,

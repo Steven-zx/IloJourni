@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/destination.dart';
 import '../theme/app_theme.dart';
+import '../widgets/minimal_map.dart';
 
 class TripMapView extends StatelessWidget {
   final GeneratedItinerary? itinerary;
@@ -29,29 +30,18 @@ class TripMapView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final waypoints = _waypoints;
-    return FlutterMap(
-      options: MapOptions(
-        center: waypoints.isNotEmpty ? waypoints.first : LatLng(10.7202, 122.5621),
-        zoom: 13,
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.ilojourni.app',
-          keepBuffer: 2,
-          panBuffer: 0,
-        ),
-        MarkerLayer(
-          markers: [
-            for (int i = 0; i < waypoints.length; i++)
-              Marker(
-                point: waypoints[i],
-                width: 36,
-                height: 36,
-                child: NumberedMarker(number: i + 1),
-              ),
-          ],
-        ),
+    return MinimalMap(
+      center: waypoints.isNotEmpty ? waypoints.first : LatLng(10.7202, 122.5621),
+      zoom: 13,
+      markers: [
+        for (final pt in waypoints)
+          Marker(
+            point: pt,
+            width: 28,
+            height: 36,
+            alignment: Alignment.bottomCenter,
+            child: const _PinMarker(),
+          ),
       ],
     );
   }
@@ -77,6 +67,34 @@ class NumberedMarker extends StatelessWidget {
         number.toString(),
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
       ),
+    );
+  }
+}
+
+class _PinMarker extends StatelessWidget {
+  const _PinMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: AppTheme.navy,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 1))],
+          ),
+        ),
+        Container(
+          width: 4,
+          height: 8,
+          decoration: BoxDecoration(color: AppTheme.navy, borderRadius: BorderRadius.circular(2)),
+        ),
+      ],
     );
   }
 }

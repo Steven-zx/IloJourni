@@ -175,7 +175,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     SavedTripsStore.add(SavedTrip(
                       title: itinerary.title,
                       dateRange: _generateDateRange(days),
-                      budget: itinerary.totalCost,
+                      budget: itinerary.totalBudget,
                       image: '',
                       itinerary: itinerary,
                     ));

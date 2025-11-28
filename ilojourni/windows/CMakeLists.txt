@@ -5,6 +5,11 @@ set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "Disable deprecated warnings" FORCE)
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "Suppress developer warnings from dependencies")
 project(ilojourni LANGUAGES CXX)
 
+# Suppress MSVC linker warning LNK4099 (missing PDB for third-party prebuilt libs like firebase_app)
+if (MSVC)
+  add_link_options(/ignore:4099)
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "ilojourni")

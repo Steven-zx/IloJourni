@@ -6,7 +6,7 @@ class DestinationsDatabase {
     Destination(
       id: 'jaro-cathedral',
       name: 'Jaro Cathedral',
-      description: 'Historic cathedral known for its grand architecture and the miraculous Our Lady of Candles. One of Iloilo\'s most iconic religious landmarks.',
+      description: 'Marian pilgrimage site with neo-Romanesque facade, belfry across the plaza, and the revered Our Lady of Candles.',
       district: 'Jaro',
       category: 'Culture',
       latitude: 10.7308,
@@ -21,7 +21,7 @@ class DestinationsDatabase {
     Destination(
       id: 'molo-church',
       name: 'Molo Church',
-      description: 'Known as the "Feminist Church" with stunning coral stone architecture and beautiful interiors. A National Historical Landmark.',
+      description: 'Gothic-Revival coral stone church famed for nave colonnades and all-female saint tableau—“The Feminist Church.”',
       district: 'Molo',
       category: 'Culture',
       latitude: 10.6977,
@@ -36,7 +36,7 @@ class DestinationsDatabase {
     Destination(
       id: 'miagao-church',
       name: 'Miag-ao Church',
-      description: 'UNESCO World Heritage Site featuring baroque architecture with Filipino indigenous motifs. A masterpiece of Spanish colonial art.',
+      description: 'UNESCO fortress church (1797) with tropical bas-relief of St. Christopher, papaya and coconut motifs on its facade.',
       district: 'Miag-ao',
       category: 'Culture',
       latitude: 10.6386,
@@ -66,7 +66,7 @@ class DestinationsDatabase {
     Destination(
       id: 'molo-mansion',
       name: 'Molo Mansion',
-      description: 'Beautifully restored ancestral house showcasing colonial-era architecture and antique collections.',
+      description: 'Restored 1920s heritage residence with artisan gift kiosks, landscaped grounds and a relaxed garden café.',
       district: 'Molo',
       category: 'Culture',
       latitude: 10.6985,
@@ -83,7 +83,7 @@ class DestinationsDatabase {
     Destination(
       id: 'garin-farm',
       name: 'Garin Farm',
-      description: 'Mountain resort with pilgrimage sites, animal sanctuary, gardens, and stunning city views. Perfect for family trips.',
+      description: 'Farm resort with 480-step white pilgrimage ascent, panoramic ridge views, produce stalls and family attractions.',
       district: 'San Joaquin',
       category: 'Nature',
       latitude: 10.5947,
@@ -98,7 +98,7 @@ class DestinationsDatabase {
     Destination(
       id: 'isla-higantes',
       name: 'Isla de Gigantes',
-      description: 'Island paradise with crystal-clear waters, pristine beaches, limestone cliffs, and fresh seafood. A must-visit for beach lovers.',
+      description: 'Island cluster of emerald waters, soaring limestone cliffs, sandbars and signature scallop feasts.',
       district: 'Carles',
       category: 'Nature',
       latitude: 11.4833,
@@ -113,7 +113,7 @@ class DestinationsDatabase {
     Destination(
       id: 'guimaras-island',
       name: 'Guimaras Island',
-      description: 'Famous for sweet mangoes, beautiful beaches, marine sanctuaries, and the historic Trappist Monastery.',
+      description: 'Mango capital offering island-hopping to quiet coves, orchard visits, marine sanctuaries and slow island life.',
       district: 'Guimaras',
       category: 'Nature',
       latitude: 10.5781,
@@ -130,7 +130,7 @@ class DestinationsDatabase {
     Destination(
       id: 'netongs-batchoy',
       name: 'Netong\'s Original La Paz Batchoy',
-      description: 'Home of the authentic La Paz Batchoy - a hearty noodle soup that\'s a must-try Ilonggo delicacy.',
+      description: 'Origin spot of La Paz Batchoy: rich bone broth, crushed chicharrón, pork innards, egg and fresh miki noodles.',
       district: 'La Paz',
       category: 'Food',
       latitude: 10.7309,
@@ -160,7 +160,7 @@ class DestinationsDatabase {
     Destination(
       id: 'breakthrough-restaurant',
       name: 'Breakthrough Restaurant',
-      description: 'Seaside restaurant famous for fresh seafood, especially their grilled dishes. Great sunset views!',
+      description: 'Open-air seaside dining; live seafood tanks, kinilaw, grilled diwal (angel wings) and sunset views.',
       district: 'Villa Beach',
       category: 'Food',
       latitude: 10.6653,
@@ -192,7 +192,7 @@ class DestinationsDatabase {
     Destination(
       id: 'esplanade-walk',
       name: 'Iloilo Esplanade',
-      description: 'Beautiful waterfront promenade perfect for jogging, biking, or evening strolls with river views.',
+      description: 'Rehabilitated riverside greenway for sunrise runs, sunset strolls, cycling and community fitness.',
       district: 'Iloilo City',
       category: 'Leisure',
       latitude: 10.6908,

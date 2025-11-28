@@ -35,12 +35,12 @@ class LocationData {
 
   static final locations = {
     'molo-church': LocationData(
-      title: 'Molo Church Heritage Tour',
+      title: 'Molo Church',
       image: 'assets/images/moloChurch.jpg',
       tags: ['Culture', 'Arts'],
-      description: "Discover the charm of Molo Church, Iloilo's Gothic Revival treasure dedicated to St. Anne. Known as the 'Feminist Church' for its all-female saints, it's a must-see for history lovers and photographers alike.",
+      description: "Gothic-Revival coral stone church famed for nave colonnades and all-female saint tableau—'The Feminist Church.'",
       hours: 'Daily, 6:00 AM - 8:00 PM',
-      location: 'Jaro, Iloilo City',
+      location: 'Molo, Iloilo City',
       price: 'Free',
       bestTime: 'Late afternoon or sunset',
       accessibility: 'Wheelchair-friendly',
@@ -66,7 +66,7 @@ class LocationData {
         NearbySpot(id: 'camiña-balay', title: 'Camiña Balay nga Bato', subtitle: 'Heritage house museum • 10-min walk'),
       ],
     ),
-    'esplanade': LocationData(
+    'esplanade-walk': LocationData(
       title: 'Iloilo Esplanade',
       image: 'assets/images/esplanadeWalk.jpg',
       tags: ['Leisure', 'Scenic', 'Fitness'],
@@ -112,6 +112,83 @@ class LocationData {
       nearbySpots: [
         NearbySpot(id: 'lapaz-market', title: 'La Paz Public Market', subtitle: 'Local market • Adjacent'),
         NearbySpot(id: 'deco-batchoy', title: "Deco's Original La Paz Batchoy", subtitle: 'Another batchoy spot • 100m walk'),
+      ],
+    ),
+    // Newly added destinations to prevent fallback to Molo Church
+    'isla-higantes': LocationData(
+      title: 'Isla de Gigantes',
+      image: 'assets/images/islan higantes.png',
+      tags: ['Nature', 'Adventure'],
+      description: 'Island cluster of emerald waters, soaring limestone cliffs, sandbars and signature scallop feasts.',
+      hours: 'Open 24 hours',
+      location: 'Carles, Iloilo',
+      price: '₱100 env. fee',
+      bestTime: 'Mid-morning island hopping',
+      accessibility: 'Boat access only',
+      activities: 'Island hopping, seafood dining, snorkeling',
+      nearbySpots: [
+        NearbySpot(id: 'cabugao-gamay', title: 'Cabugao Gamay Islet', subtitle: 'Iconic view deck'),
+        NearbySpot(id: 'antonia-beach', title: 'Antonia Beach', subtitle: 'Snorkeling & lunch'),
+      ],
+    ),
+    'miagao-church': LocationData(
+      title: 'Miag-ao Church',
+      image: 'assets/images/miagaoChurch.jpg',
+      tags: ['Culture', 'History'],
+      description: 'UNESCO fortress church (1797) with tropical bas-relief of St. Christopher, papaya and coconut motifs on its facade.',
+      hours: 'Daily, 8:00 AM - 5:00 PM',
+      location: 'Miag-ao, Iloilo',
+      price: '₱50 entrance',
+      bestTime: 'Morning (soft facade lighting)',
+      accessibility: 'Grounds accessible; interior steps',
+      activities: 'Heritage photography, architecture appreciation',
+      nearbySpots: [
+        NearbySpot(id: 'garin-farm', title: 'Garin Farm', subtitle: 'Pilgrimage + farm • 30min'),
+      ],
+    ),
+    'garin-farm': LocationData(
+      title: 'Garin Farm',
+      image: 'assets/images/garinFarm.jpg',
+      tags: ['Nature', 'Adventure'],
+      description: 'Farm resort with 480-step white pilgrimage ascent, panoramic ridge views, produce stalls and family attractions.',
+      hours: 'Daily, 7:00 AM - 5:00 PM',
+      location: 'San Joaquin, Iloilo',
+      price: '₱200 entrance',
+      bestTime: 'Morning (cooler climb)',
+      accessibility: 'Requires stair ascent for summit',
+      activities: 'Pilgrimage steps, view deck, light agriculture',
+      nearbySpots: [
+        NearbySpot(id: 'miagao-church', title: 'Miag-ao Church', subtitle: 'UNESCO site • 30min'),
+      ],
+    ),
+    'guimaras-island': LocationData(
+      title: 'Guimaras Island',
+      image: 'assets/images/guimarasIsland.jpg',
+      tags: ['Nature', 'Adventure'],
+      description: 'Mango capital offering island-hopping to quiet coves, orchard visits, marine sanctuaries and slow island life.',
+      hours: 'Open 24 hours',
+      location: 'Guimaras',
+      price: '₱15-30 boat',
+      bestTime: 'Dry season (Nov–May)',
+      accessibility: 'Pump boat / ferry',
+      activities: 'Beach day, mango products, biking',
+      nearbySpots: [
+        NearbySpot(id: 'guisi-lighthouse', title: 'Guisi Lighthouse', subtitle: 'Historic ruins'),
+      ],
+    ),
+    'breakthrough-restaurant': LocationData(
+      title: 'Breakthrough Restaurant',
+      image: 'assets/images/breakthrough.jpg',
+      tags: ['Food', 'Scenic'],
+      description: 'Open-air seaside dining; live seafood tanks, kinilaw, grilled diwal (angel wings) and sunset views.',
+      hours: 'Daily, 10:00 AM - 10:00 PM',
+      location: 'Villa Beach, Iloilo City',
+      price: '₱200-500 meal',
+      bestTime: 'Sunset dinner',
+      accessibility: 'Ground level tables',
+      activities: 'Seafood dining, sunset watching',
+      nearbySpots: [
+        NearbySpot(id: 'netongs-batchoy', title: "Netong's Batchoy", subtitle: 'Classic soup • 15min'),
       ],
     ),
   };
@@ -232,18 +309,27 @@ class MoreInfoScreen extends StatelessWidget {
                                     TileLayer(
                                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                       userAgentPackageName: 'com.ilojourni.app',
-                                      keepBuffer: 2,
+                                      keepBuffer: 1,
                                       panBuffer: 0,
+                                      tileBuilder: (context, widget, tile) => ColorFiltered(
+                                        colorFilter: const ColorFilter.matrix(<double>[
+                                          0.2126, 0.7152, 0.0722, 0, 0,
+                                          0.2126, 0.7152, 0.0722, 0, 0,
+                                          0.2126, 0.7152, 0.0722, 0, 0,
+                                          0,      0,      0,      1, 0,
+                                        ]),
+                                        child: widget,
+                                      ),
                                     ),
                                     if (dest != null)
                                       MarkerLayer(
                                         markers: [
                                           Marker(
                                             point: center,
-                                            width: 26,
-                                            height: 52,
+                                            width: 24,
+                                            height: 34,
                                             alignment: Alignment.bottomCenter,
-                                            child: const PinMarker(size: 26),
+                                            child: const PinMarker(size: 24),
                                           ),
                                         ],
                                       ),

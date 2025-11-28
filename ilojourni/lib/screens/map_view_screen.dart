@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pin_marker.dart';
+import '../widgets/minimal_map.dart';
 import '../data/destinations_database.dart';
 
 class DestinationMapPoint {
@@ -38,31 +39,20 @@ class MapViewScreen extends StatelessWidget {
         title: const Text('Map View'),
         backgroundColor: AppTheme.teal,
       ),
-      body: FlutterMap(
-        options: MapOptions(
-          center: center,
-          zoom: 12.5,
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.ilojourni.app',
-            keepBuffer: 2,
-            panBuffer: 0,
-          ),
-          if (singlePoint != null)
-            MarkerLayer(
-              markers: [
+      body: MinimalMap(
+        center: center,
+        zoom: 13,
+        markers: singlePoint == null
+            ? const []
+            : [
                 Marker(
-                  width: 28,
-                  height: 56,
+                  width: 24,
+                  height: 34,
                   alignment: Alignment.bottomCenter,
                   point: singlePoint.location,
-                  child: const PinMarker(number: 1, size: 28),
+                  child: const PinMarker(size: 24),
                 ),
               ],
-            ),
-        ],
       ),
     );
   }

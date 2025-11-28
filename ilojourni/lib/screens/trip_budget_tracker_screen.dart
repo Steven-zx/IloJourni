@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+import '../services/saved_trips_store.dart';
+import '../models/destination.dart';
 
 class TripBudgetTrackerScreen extends StatefulWidget {
   const TripBudgetTrackerScreen({super.key});
@@ -11,30 +13,66 @@ class TripBudgetTrackerScreen extends StatefulWidget {
 }
 
 class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
-  final int _totalBudget = 3000;
-  final int _plannedBudget = 3000;
+  int _totalBudget = 0;
+  int _plannedBudget = 0;
   int _spentBudget = 0;
   String _selectedDay = 'All';
+  GeneratedItinerary? _itinerary;
 
-  final List<BudgetItem> _items = [
-    BudgetItem(
-      day: 'Day 1',
-      type: 'transportation',
-      title: 'Ride: Villa / Mohon / Molo',
-      details: 'Jeep • E-Bus   15-20min   Fare: ₱ 15-20',
-      amount: 20,
-    ),
-    BudgetItem(
-      day: 'Day 1',
-      type: 'activity',
-      title: 'Molo Church',
-      details: 'Molo District',
-      amount: 0,
-    ),
-  ];
+  final List<BudgetItem> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final GeneratedItinerary? itin = args?['itinerary'] as GeneratedItinerary?;
+      if (itin != null) {
+        _bindItinerary(itin);
+      } else if (SavedTripsStore.instance.trips.isNotEmpty) {
+        _bindItinerary(SavedTripsStore.instance.trips.last.itinerary);
+      }
+    });
+  }
+
+  void _bindItinerary(GeneratedItinerary itin) {
+    setState(() {
+      _itinerary = itin;
+      _totalBudget = itin.totalBudget;
+      _plannedBudget = itin.totalCost;
+      _items.clear();
+      for (final day in itin.days) {
+        for (final a in day.activities) {
+          if (a.type == 'transport') {
+            _items.add(BudgetItem(
+              day: 'Day ${day.dayNumber}',
+              type: 'transportation',
+              title: a.name,
+              details: '${a.description}   Fare: ₱${a.cost}',
+              amount: a.cost,
+            ));
+          } else {
+            _items.add(BudgetItem(
+              day: 'Day ${day.dayNumber}',
+              type: 'activity',
+              title: a.name,
+              details: a.location ?? '',
+              amount: a.cost,
+            ));
+          }
+        }
+      }
+      _spentBudget = 0;
+    });
+  }
 
   int get _remainingBudget => _totalBudget - _spentBudget;
   double get _progressPercent => _totalBudget == 0 ? 0 : (_spentBudget / _totalBudget).clamp(0.0, 1.0);
+
+  List<BudgetItem> get _filteredItems {
+    if (_selectedDay == 'All') return _items;
+    return _items.where((i) => i.day == _selectedDay).toList();
+  }
 
   void _addExpense() async {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
@@ -238,26 +276,15 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
                           isDark: isDark,
                         ),
                         const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 1',
-                          isSelected: _selectedDay == 'Day 1',
-                          onTap: () => setState(() => _selectedDay = 'Day 1'),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 2',
-                          isSelected: _selectedDay == 'Day 2',
-                          onTap: () => setState(() => _selectedDay = 'Day 2'),
-                          isDark: isDark,
-                        ),
-                        const SizedBox(width: 8),
-                        _DayChip(
-                          label: 'Day 3',
-                          isSelected: _selectedDay == 'Day 3',
-                          onTap: () => setState(() => _selectedDay = 'Day 3'),
-                          isDark: isDark,
-                        ),
+                        ...((_itinerary?.days ?? [])).map((d) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _DayChip(
+                                label: 'Day ${d.dayNumber}',
+                                isSelected: _selectedDay == 'Day ${d.dayNumber}',
+                                onTap: () => setState(() => _selectedDay = 'Day ${d.dayNumber}'),
+                                isDark: isDark,
+                              ),
+                            )),
                       ],
                     ),
                   ),
@@ -267,22 +294,22 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
           ),
           // Content
           Expanded(
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              children: [
-                _RideCard(
-                  line: 'Ride: Villa / Mohon / Molo',
-                  details: 'Jeep • E-Bus   15-20min   Fare: ₱ 15-20',
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _BudgetItemCard(
-                  number: 1,
-                  title: 'Molo Church',
-                  location: 'Molo District',
-                  isDark: isDark,
-                ),
-              ],
+              itemCount: _filteredItems.length,
+              itemBuilder: (context, index) {
+                final item = _filteredItems[index];
+                if (item.type == 'transportation') {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _RideCard(line: item.title, details: item.details, isDark: isDark),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _BudgetItemCard(number: index + 1, title: item.title, location: item.details, isDark: isDark),
+                );
+              },
             ),
           ),
           // Add expense button

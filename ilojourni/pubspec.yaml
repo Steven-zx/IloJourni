@@ -30,8 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^2.25.4
-  cloud_firestore: ^4.13.4
+  # Removed firebase_core & cloud_firestore (not used; caused Windows linker PDB warnings)
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
 
