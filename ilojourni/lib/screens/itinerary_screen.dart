@@ -103,54 +103,70 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
           ),
           const SizedBox(height: 16),
           // Display days and activities
-          ...filteredDays.map((dayPlan) {
-            return Column(
-              children: [
-                _DayHeader(
-                  day: 'Day ${dayPlan.dayNumber}',
-                  subtitle: '${dayPlan.activities.length} activities • ${dayPlan.theme}',
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                ...dayPlan.activities.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final activity = entry.value;
-                  
-                  if (activity.type == 'transport') {
-                    return Column(
-                      children: [
-                        _RideSegment(
-                          line: activity.name,
-                          details: '${activity.description}   Fare: ₱${activity.cost}',
-                          isDark: isDark,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    );
-                  }
-                  
-                  return Column(
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: Column(
+                    key: ValueKey<String>(_selectedDay),
                     children: [
-                      _PlaceCard(
-                        number: index + 1,
-                        title: activity.name,
-                        image: activity.image ?? 'assets/images/jaroCathedral.jpg',
-                        imageColor: _getActivityColor(activity.type),
-                        description: activity.description,
-                        time: activity.time,
-                        location: activity.location ?? '',
-                        price: activity.cost == 0 ? 'Free' : '₱${activity.cost}',
-                        tags: activity.tags ?? [],
-                        isDark: isDark,
-                      ),
-                      const SizedBox(height: 12),
+                      ...filteredDays.map((dayPlan) {
+                        return Column(
+                          children: [
+                            _DayHeader(
+                              day: 'Day ${dayPlan.dayNumber}',
+                              subtitle: '${dayPlan.activities.length} activities • ${dayPlan.theme}',
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 12),
+                            ...dayPlan.activities.asMap().entries.map((entry) {
+                              final activity = entry.value;
+                              // Compute numbering among destination-type activities only
+                              final number = activity.type == 'destination'
+                                  ? dayPlan.activities
+                                      .where((a) => a.type == 'destination')
+                                      .toList()
+                                      .indexOf(activity) + 1
+                                  : null;
+                              
+                              if (activity.type == 'transport') {
+                                return Column(
+                                  children: [
+                                    _RideSegment(
+                                      line: activity.name,
+                                      details: '${activity.description}   Fare: ₱${activity.cost}',
+                                      isDark: isDark,
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                );
+                              }
+                              
+                              return Column(
+                                children: [
+                                  _PlaceCard(
+                                    number: number ?? 0,
+                                    title: activity.name,
+                                    image: activity.image ?? 'assets/images/jaroCathedral.jpg',
+                                    imageColor: _getActivityColor(activity.type),
+                                    description: activity.description,
+                                    time: activity.time,
+                                    location: activity.location ?? '',
+                                    price: activity.cost == 0 ? 'Free' : '₱${activity.cost}',
+                                    tags: activity.tags ?? [],
+                                    isDark: isDark,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                              );
+                            }).toList(),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      }).toList(),
                     ],
-                  );
-                }).toList(),
-                const SizedBox(height: 8),
-              ],
-            );
-          }).toList(),
+                  ),
+                ),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -348,6 +364,8 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageHeight = screenWidth <= 360 ? 120.0 : 140.0;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -405,6 +423,8 @@ class _PlaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageHeight = screenWidth <= 360 ? 120.0 : 140.0;
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkCard : Colors.white,
@@ -426,43 +446,44 @@ class _PlaceCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: image.isEmpty
                     ? PlaceholderImage(
-                        height: 140,
+                        height: imageHeight,
                         width: double.infinity,
                         label: title,
                         color: imageColor,
                       )
                     : Image.asset(
                         image,
-                        height: 140,
+                        height: imageHeight,
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          height: 140,
+                          height: imageHeight,
                           color: imageColor ?? AppTheme.lightGrey,
                         ),
                       ),
               ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.teal,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$number',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+              if (number > 0)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.teal,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$number',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
           Padding(
@@ -472,6 +493,8 @@ class _PlaceCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -481,6 +504,8 @@ class _PlaceCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   description,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isDark ? Colors.white70 : Colors.black87,
                   ),
@@ -490,7 +515,7 @@ class _PlaceCard extends StatelessWidget {
                   children: [
                     Icon(Icons.schedule, size: 18, color: isDark ? Colors.white54 : Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(time, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+                    Flexible(child: Text(time, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87), overflow: TextOverflow.ellipsis)),
                     const SizedBox(width: 12),
                     Icon(Icons.place_outlined, size: 18, color: isDark ? Colors.white54 : Colors.grey[600]),
                     const SizedBox(width: 4),
@@ -504,12 +529,13 @@ class _PlaceCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Icon(Icons.chat_bubble_outline, size: 18, color: isDark ? Colors.white54 : Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(price, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+                    Flexible(child: Text(price, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87), overflow: TextOverflow.ellipsis)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
+                  runSpacing: 6,
                   children: tags.map((t) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -519,6 +545,8 @@ class _PlaceCard extends StatelessWidget {
                       ),
                       child: Text(
                         t,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
                       ),
                     );
@@ -574,6 +602,8 @@ class _RideSegment extends StatelessWidget {
               children: [
                 Text(
                   line,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
@@ -582,6 +612,8 @@ class _RideSegment extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   details,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isDark ? Colors.white60 : Colors.grey[600],
                   ),

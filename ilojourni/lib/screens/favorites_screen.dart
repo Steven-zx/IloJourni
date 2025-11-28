@@ -256,7 +256,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 }
 
-class _FavoriteCard extends StatelessWidget {
+class _FavoriteCard extends StatefulWidget {
   const _FavoriteCard({
     required this.favorite,
     required this.isDark,
@@ -268,6 +268,19 @@ class _FavoriteCard extends StatelessWidget {
   final VoidCallback onRemove;
 
   @override
+  State<_FavoriteCard> createState() => _FavoriteCardState();
+}
+
+class _FavoriteCardState extends State<_FavoriteCard> {
+  bool _collapsed = false;
+
+  Future<void> _animateRemove() async {
+    setState(() => _collapsed = true);
+    await Future.delayed(const Duration(milliseconds: 250));
+    widget.onRemove();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Check if this destination has full details
     final availableLocations = [
@@ -277,177 +290,184 @@ class _FavoriteCard extends StatelessWidget {
       'molo-mansion',
       'netongs-batchoy'
     ];
-    final hasDetails = availableLocations.contains(favorite.id);
+    final hasDetails = availableLocations.contains(widget.favorite.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (hasDetails) {
-              Navigator.pushNamed(
-                context,
-                MoreInfoScreen.route,
-                arguments: favorite.id,
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('More details coming soon!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: isDark ? AppTheme.darkCard : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.black26 : Colors.black12,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Image
-                    ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(16),
-                      ),
-                      child: favorite.image.isEmpty
-                          ? Container(
-                              width: 120,
-                              height: 120,
-                              color: AppTheme.lightGrey,
-                            )
-                          : Image.asset(
-                              favorite.image,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 120,
-                                height: 120,
-                                color: AppTheme.lightGrey,
-                              ),
-                            ),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _collapsed
+            ? const SizedBox.shrink()
+            : Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (hasDetails) {
+                      Navigator.pushNamed(
+                        context,
+                        MoreInfoScreen.route,
+                        arguments: widget.favorite.id,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('More details coming soon!'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: widget.isDark ? AppTheme.darkCard : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.isDark ? Colors.black26 : Colors.black12,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    // Content
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
+                    child: Stack(
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              favorite.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: isDark ? Colors.white : Colors.black,
+                            // Image
+                            ClipRRect(
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(16),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              child: widget.favorite.image.isEmpty
+                                  ? Container(
+                                      width: 120,
+                                      height: 120,
+                                      color: AppTheme.lightGrey,
+                                    )
+                                  : Image.asset(
+                                      widget.favorite.image,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        width: 120,
+                                        height: 120,
+                                        color: AppTheme.lightGrey,
+                                      ),
+                                    ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 14,
-                                  color: isDark ? Colors.white38 : Colors.grey[500],
+                            // Content
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.favorite.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: widget.isDark ? Colors.white : Colors.black,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 14,
+                                          color: widget.isDark ? Colors.white38 : Colors.grey[500],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            widget.favorite.location,
+                                            style: TextStyle(
+                                              color: widget.isDark ? Colors.white60 : Colors.grey[600],
+                                              fontSize: 11,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: widget.favorite.tags.map((tag) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: widget.isDark
+                                                ? const Color(0xFF3A3A3A)
+                                                : Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: widget.isDark
+                                                  ? const Color(0xFF4A4A4A)
+                                                  : Colors.grey[300]!,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            tag,
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: widget.isDark ? Colors.white70 : Colors.black,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    favorite.location,
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white60 : Colors.grey[600],
-                                      fontSize: 11,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: favorite.tags.map((tag) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF3A3A3A)
-                                        : Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? const Color(0xFF4A4A4A)
-                                          : Colors.grey[300]!,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: isDark ? Colors.white70 : Colors.black,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Remove button
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onRemove,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.black.withOpacity(0.5)
-                              : Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
+                        // Remove button
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _animateRemove,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: widget.isDark
+                                      ? Colors.black.withOpacity(0.5)
+                                      : Colors.white.withOpacity(0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.favorite,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
+          );
   }
 }

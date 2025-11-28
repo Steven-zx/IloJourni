@@ -53,14 +53,28 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
   ];
   int selectedDayIndex = 0;
   final Map<int, bool> _expandedDays = {0: true};
+  final ScrollController _daysScrollController = ScrollController();
 
   @override
   void dispose() {
     _titleController.dispose();
     _budgetController.dispose();
+    _daysScrollController.dispose();
     super.dispose();
   }
 
+  // Basic jeepney fare heuristic: intra-city ≈ ₱15, cross-district ≈ ₱30, far (San Joaquin/Miag-ao) ≈ ₱50
+  int _estimateJeepneyFare(String from, String to) {
+    final f = from.toLowerCase();
+    final t = to.toLowerCase();
+    if (f == t) return 15;
+    const inner = ['iloilo city', 'mandurriao', 'la paz', 'molo', 'city proper', 'jaro'];
+    final isInner = inner.contains(f) && inner.contains(t);
+    if (isInner) return 15;
+    if ((f.contains('san joaquin') || f.contains('miag')) || (t.contains('san joaquin') || t.contains('miag')))
+      return 50;
+    return 30;
+  }
   void _addDestinationToDay(DestinationItem destination) {
     setState(() {
       final updatedDestinations = List<DestinationItem>.from(days[selectedDayIndex].destinations)
@@ -82,6 +96,17 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
       final newDayIndex = days.length;
       days.add(ItineraryDay(dayNumber: days.length + 1));
       _expandedDays[newDayIndex] = false;
+    });
+    // Auto-select and scroll to the newly added day
+    setState(() => selectedDayIndex = days.length - 1);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_daysScrollController.hasClients) {
+        _daysScrollController.animateTo(
+          _daysScrollController.position.maxScrollExtent + 200,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+        );
+      }
     });
   }
 
@@ -209,9 +234,11 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     final budget = int.tryParse(_budgetController.text) ?? 0;
     // Build days with computed activity costs and totals
     final manualDays = days.map((day) {
-      final activities = day.destinations.map((dest) {
+      final List<Activity> activities = [];
+      for (int i = 0; i < day.destinations.length; i++) {
+        final dest = day.destinations[i];
         final cost = _calculateDestinationCost(dest);
-        return Activity(
+        activities.add(Activity(
           type: 'destination',
           name: dest.name,
           description: dest.name,
@@ -220,8 +247,22 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
           location: dest.district,
           tags: [dest.category],
           image: dest.image,
-        );
-      }).toList();
+        ));
+        if (i < day.destinations.length - 1) {
+          final next = day.destinations[i + 1];
+          final hopFare = _estimateJeepneyFare(dest.district, next.district);
+          activities.add(Activity(
+            type: 'transport',
+            name: 'Jeepney to ${next.name}',
+            description: 'Travel via jeepney to ${next.district}',
+            time: 'TBD',
+            cost: hopFare,
+            location: '${dest.district} → ${next.district}',
+            tags: const ['Transport'],
+            image: '',
+          ));
+        }
+      }
       final totalCost = activities.fold<int>(0, (sum, a) => sum + a.cost);
       return DayPlan(
         dayNumber: day.dayNumber,
@@ -273,6 +314,8 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     final budget = int.tryParse(_budgetController.text) ?? 0;
     final totalCost = _computeTotalCost();
 
+    // Screen width can be used for future responsive adjustments
+    // final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F5F5),
       body: Column(
@@ -392,6 +435,7 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
           // Days list
           Expanded(
             child: ListView.builder(
+              controller: _daysScrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: days.length,
               itemBuilder: (context, index) {
@@ -572,7 +616,7 @@ class _DayChip extends StatelessWidget {
   }
 }
 
-class _DayCard extends StatelessWidget {
+class _DayCard extends StatefulWidget {
   final ItineraryDay day;
   final bool isExpanded;
   final VoidCallback onToggle;
@@ -594,7 +638,57 @@ class _DayCard extends StatelessWidget {
   });
 
   @override
+  State<_DayCard> createState() => _DayCardState();
+}
+
+class _DayCardState extends State<_DayCard> {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  late List<DestinationItem> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<DestinationItem>.from(widget.day.destinations);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DayCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final previous = _items;
+    final current = widget.day.destinations;
+    // Handle addition
+    if (current.length > previous.length) {
+      final index = current.length - 1; // assume append
+      final newItem = current[index];
+      _items.insert(index, newItem);
+      _listKey.currentState?.insertItem(index, duration: const Duration(milliseconds: 250));
+    }
+    // Handle single removal at an index
+    else if (current.length < previous.length) {
+      int removalIndex = current.length; // default to end
+      for (int i = 0; i < previous.length; i++) {
+        if (i >= current.length || previous[i].id != current[i].id) {
+          removalIndex = i;
+          break;
+        }
+      }
+      final removedItem = _items.removeAt(removalIndex);
+      _listKey.currentState?.removeItem(
+        removalIndex,
+        (context, animation) => SizeTransition(
+          sizeFactor: animation,
+          child: _DestinationCard(destination: removedItem, onRemove: () {}),
+        ),
+        duration: const Duration(milliseconds: 250),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final day = widget.day;
+    final isExpanded = widget.isExpanded;
+    final isDark = widget.isDark;
     
     return Container(
       decoration: BoxDecoration(
@@ -605,7 +699,7 @@ class _DayCard extends StatelessWidget {
         children: [
           // Day header
           InkWell(
-            onTap: onToggle,
+            onTap: widget.onToggle,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -641,17 +735,17 @@ class _DayCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (canDelete)
+                  if (widget.canDelete)
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      onPressed: onDeleteDay,
+                      onPressed: widget.onDeleteDay,
                     ),
                   IconButton(
                     icon: Icon(
                       isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                       color: Colors.white,
                     ),
-                    onPressed: onToggle,
+                    onPressed: widget.onToggle,
                   ),
                 ],
               ),
@@ -667,7 +761,7 @@ class _DayCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  if (day.destinations.isEmpty)
+                  if (_items.isEmpty)
                     Column(
                       children: [
                         const Icon(Icons.place, color: Colors.grey, size: 48),
@@ -685,22 +779,30 @@ class _DayCard extends StatelessWidget {
                       ],
                     )
                   else
-                    ...day.destinations.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final dest = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _DestinationCard(
-                          destination: dest,
-                          onRemove: () => onRemoveDestination(index),
-                        ),
-                      );
-                    }),
+                    AnimatedList(
+                      key: _listKey,
+                      initialItemCount: _items.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index, animation) {
+                        final dest = _items[index];
+                        return SizeTransition(
+                          sizeFactor: animation,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _DestinationCard(
+                              destination: dest,
+                              onRemove: () => widget.onRemoveDestination(index),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   // Add destination button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: onAddDestination,
+                      onPressed: widget.onAddDestination,
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: isDark ? AppTheme.darkAccent : AppTheme.teal, width: 1.5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -911,6 +1013,27 @@ class _DestinationPickerSheetState extends State<_DestinationPickerSheet> {
       district: 'Iloilo City',
       category: 'Culture',
       image: 'assets/images/museoIloilo.jpg',
+    ),
+    DestinationItem(
+      id: 'robertos-siopao',
+      name: "Roberto's Siopao",
+      district: 'Iloilo City',
+      category: 'Food',
+      image: 'assets/images/robertos.png',
+    ),
+    DestinationItem(
+      id: 'smallville-complex',
+      name: 'Smallville Complex',
+      district: 'Mandurriao',
+      category: 'Leisure',
+      image: 'assets/images/smallville.png',
+    ),
+    DestinationItem(
+      id: 'madge-cafe',
+      name: 'Madge Café',
+      district: 'Iloilo City',
+      category: 'Food',
+      image: 'assets/images/madgeCafe.png',
     ),
   ];
 
