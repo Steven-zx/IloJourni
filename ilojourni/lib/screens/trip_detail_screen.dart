@@ -18,10 +18,15 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   String _selectedView = 'List'; // 'List' or 'Map'
   String _selectedDay = 'All';
+  bool _initializedFromArgs = false;
 
   SavedTrip? get _trip {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is SavedTrip) return args;
+    if (args is Map) {
+      final trip = args['trip'];
+      if (trip is SavedTrip) return trip;
+    }
     return null;
   }
 
@@ -33,12 +38,62 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final days = _itinerary!.days;
     if (_selectedDay == 'All') {
       for (final day in days) {
-        widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities • ₱${day.totalCost} total', isDark: isDark));
+        final nonTransportCount = day.activities.where((a) => a.type.toLowerCase() != 'transport').length;
+        widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '$nonTransportCount stop${nonTransportCount != 1 ? 's' : ''} • ₱${day.totalCost} total', isDark: isDark));
         widgets.add(const SizedBox(height: 12));
+        int activityNumber = 0;
         for (int i = 0; i < day.activities.length; i++) {
           final act = day.activities[i];
+          if (act.type.toLowerCase() == 'transport') {
+            widgets.add(_TransportCard(
+              title: act.name,
+              description: act.description,
+              location: act.location ?? '',
+              price: '₱${act.cost}',
+              isDark: isDark,
+            ));
+            widgets.add(const SizedBox(height: 12));
+          } else {
+            activityNumber++;
+            widgets.add(_ActivityCard(
+              number: activityNumber,
+              day: day.dayNumber,
+              title: act.name,
+              image: act.image ?? '',
+              imageColor: const Color(0xFFE8B86D),
+              description: act.description,
+              time: act.time,
+              location: act.location ?? '',
+              price: '₱ ${act.cost}',
+              tags: act.tags ?? [],
+              isDark: isDark,
+            ));
+            widgets.add(const SizedBox(height: 12));
+          }
+        }
+      }
+    } else {
+      final dayNumber = int.parse(_selectedDay.split(' ')[1]);
+      final day = days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => days.first);
+      final nonTransportCount = day.activities.where((a) => a.type.toLowerCase() != 'transport').length;
+      widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '$nonTransportCount stop${nonTransportCount != 1 ? 's' : ''} • ₱${day.totalCost} total', isDark: isDark));
+      widgets.add(const SizedBox(height: 12));
+      int activityNumber = 0;
+      for (int i = 0; i < day.activities.length; i++) {
+        final act = day.activities[i];
+        if (act.type.toLowerCase() == 'transport') {
+          widgets.add(_TransportCard(
+            title: act.name,
+            description: act.description,
+            location: act.location ?? '',
+            price: '₱${act.cost}',
+            isDark: isDark,
+          ));
+          widgets.add(const SizedBox(height: 12));
+        } else {
+          activityNumber++;
           widgets.add(_ActivityCard(
-            number: i + 1,
+            number: activityNumber,
             day: day.dayNumber,
             title: act.name,
             image: act.image ?? '',
@@ -53,30 +108,30 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           widgets.add(const SizedBox(height: 12));
         }
       }
-    } else {
-      final dayNumber = int.parse(_selectedDay.split(' ')[1]);
-      final day = days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => days.first);
-      widgets.add(_DayHeader(day: 'Day ${day.dayNumber}', dayNumber: day.dayNumber, subtitle: '${day.activities.length} activities • ₱${day.totalCost} total', isDark: isDark));
-      widgets.add(const SizedBox(height: 12));
-      for (int i = 0; i < day.activities.length; i++) {
-        final act = day.activities[i];
-        widgets.add(_ActivityCard(
-          number: i + 1,
-          day: day.dayNumber,
-          title: act.name,
-          image: act.image ?? '',
-          imageColor: const Color(0xFFE8B86D),
-          description: act.description,
-          time: act.time,
-          location: act.location ?? '',
-          price: '₱ ${act.cost}',
-          tags: act.tags ?? [],
-          isDark: isDark,
-        ));
-        widgets.add(const SizedBox(height: 12));
-      }
     }
     return widgets;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedFromArgs) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      final initialView = args['initialView'];
+      final initialDay = args['initialDay'];
+      setState(() {
+        if (initialView is String && (initialView == 'List' || initialView == 'Map')) {
+          _selectedView = initialView;
+        }
+        if (initialDay is String) {
+          _selectedDay = initialDay;
+        }
+        _initializedFromArgs = true;
+      });
+    } else {
+      _initializedFromArgs = true;
+    }
   }
 
   @override
@@ -87,8 +142,10 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     final itinerary = _itinerary;
     final tripTitle = trip?.title ?? itinerary?.title ?? 'Trip';
     final tripDays = itinerary?.days.length ?? 1;
-    final tripSpots = itinerary?.days.fold<int>(0, (sum, d) => sum + d.activities.length) ?? 0;
-    final tripBudget = trip?.budget ?? itinerary?.totalBudget ?? 0;
+    // Count only destination activities as "Spots"
+    final tripSpots = itinerary?.days.fold<int>(0, (sum, d) =>
+      sum + d.activities.where((a) => a.type.toLowerCase() == 'destination').length
+    ) ?? 0;
     final tripTotalCost = itinerary?.totalCost ?? 0;
 
     return Scaffold(
@@ -179,7 +236,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         children: [
                           _SummaryItem(icon: Icons.calendar_today, label: 'Duration', value: '$tripDays Day${tripDays > 1 ? 's' : ''}', isDark: isDark),
                           _SummaryItem(icon: Icons.place, label: 'Spots', value: '$tripSpots', isDark: isDark),
-                          _SummaryItem(icon: Icons.wallet, label: 'Budget', value: '₱$tripBudget', isDark: isDark),
                           _SummaryItem(icon: Icons.payments, label: 'Total Cost', value: '₱$tripTotalCost', isDark: isDark),
                         ],
                       ),
@@ -228,10 +284,39 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           ]
           else ...[
             // Map View
+            Container(
+              height: 50,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _DayChip(
+                    label: 'All',
+                    isSelected: _selectedDay == 'All',
+                    onTap: () => setState(() => _selectedDay = 'All'),
+                    isDark: isDark,
+                  ),
+                  ...List.generate(
+                    itinerary?.days.length ?? 0,
+                    (i) => Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: _DayChip(
+                        label: 'Day ${i + 1}',
+                        isSelected: _selectedDay == 'Day ${i + 1}',
+                        onTap: () => setState(() => _selectedDay = 'Day ${i + 1}'),
+                        isDark: isDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: TripMapView(
                 itinerary: itinerary,
                 destinations: DestinationsDatabase.allDestinations,
+                selectedDay: _selectedDay,
               ),
             ),
           ],
@@ -346,8 +431,8 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: isDark ? AppTheme.darkTeal : AppTheme.teal, size: 20),
-        const SizedBox(height: 4),
+        Icon(icon, color: isDark ? AppTheme.darkTeal : AppTheme.teal, size: 22),
+        const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
@@ -355,11 +440,12 @@ class _SummaryItem extends StatelessWidget {
             color: isDark ? Colors.white60 : Colors.grey[600],
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: 15,
             color: isDark ? Colors.white : Colors.black87,
           ),
         ),
@@ -391,12 +477,12 @@ class _DayChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? AppTheme.darkCard : Colors.white)
-              : Colors.transparent,
+              : (isDark ? const Color(0xFF1A3A47) : const Color(0xFF2D7A6E)),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : Colors.white.withOpacity(0.3),
+                : (isDark ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.4)),
             width: 1.5,
           ),
         ),
@@ -639,69 +725,74 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
-class _RideCard extends StatelessWidget {
-  const _RideCard({
-    required this.line,
-    required this.details,
-    required this.day,
+class _TransportCard extends StatelessWidget {
+  const _TransportCard({
+    required this.title,
+    required this.description,
+    required this.location,
+    required this.price,
     required this.isDark,
   });
 
-  final String line;
-  final String details;
-  final int day;
+  final String title;
+  final String description;
+  final String location;
+  final String price;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : Colors.white,
+        color: isDark ? AppTheme.darkCard.withOpacity(0.5) : Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black26 : Colors.black12,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2C2C2C) : Colors.grey[100],
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.directions_car,
+              Icons.directions_bus,
               color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+              size: 18,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  line,
+                  title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  details,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white60 : Colors.grey[600],
+                if (description.isNotEmpty)
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white54 : Colors.grey[600],
+                    ),
                   ),
-                ),
               ],
+            ),
+          ),
+          Text(
+            price,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
         ],

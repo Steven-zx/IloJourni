@@ -8,19 +8,40 @@ import '../widgets/minimal_map.dart';
 class TripMapView extends StatelessWidget {
   final GeneratedItinerary? itinerary;
   final List<Destination> destinations;
-  const TripMapView({Key? key, required this.itinerary, required this.destinations}) : super(key: key);
+  final String selectedDay;
+  const TripMapView({Key? key, required this.itinerary, required this.destinations, this.selectedDay = 'All'}) : super(key: key);
 
-  List<LatLng> get _waypoints {
+  List<MapEntry<LatLng, int>> get _numberedWaypoints {
     if (itinerary == null) return [];
-    final points = <LatLng>[];
-    for (final day in itinerary!.days) {
+    final points = <MapEntry<LatLng, int>>[];
+    int number = 0;
+    
+    if (selectedDay == 'All') {
+      for (final day in itinerary!.days) {
+        for (final act in day.activities) {
+          if (act.type.toLowerCase() == 'transport') continue;
+          final dest = destinations.cast<Destination?>().firstWhere(
+            (d) => d?.name.toLowerCase() == act.name.toLowerCase(),
+            orElse: () => null,
+          );
+          if (dest != null) {
+            number++;
+            points.add(MapEntry(LatLng(dest.latitude, dest.longitude), number));
+          }
+        }
+      }
+    } else {
+      final dayNumber = int.parse(selectedDay.split(' ')[1]);
+      final day = itinerary!.days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => itinerary!.days.first);
       for (final act in day.activities) {
+        if (act.type.toLowerCase() == 'transport') continue;
         final dest = destinations.cast<Destination?>().firstWhere(
           (d) => d?.name.toLowerCase() == act.name.toLowerCase(),
           orElse: () => null,
         );
         if (dest != null) {
-          points.add(LatLng(dest.latitude, dest.longitude));
+          number++;
+          points.add(MapEntry(LatLng(dest.latitude, dest.longitude), number));
         }
       }
     }
@@ -29,18 +50,18 @@ class TripMapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final waypoints = _waypoints;
+    final waypoints = _numberedWaypoints;
     return MinimalMap(
-      center: waypoints.isNotEmpty ? waypoints.first : LatLng(10.7202, 122.5621),
+      center: waypoints.isNotEmpty ? waypoints.first.key : LatLng(10.7202, 122.5621),
       zoom: 13,
       markers: [
-        for (final pt in waypoints)
+        for (final entry in waypoints)
           Marker(
-            point: pt,
-            width: 28,
-            height: 36,
-            alignment: Alignment.bottomCenter,
-            child: const _PinMarker(),
+            point: entry.key,
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            child: NumberedMarker(number: entry.value),
           ),
       ],
     );
@@ -57,44 +78,16 @@ class NumberedMarker extends StatelessWidget {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: AppTheme.navy,
+        color: AppTheme.teal,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 1))],
+        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
       ),
       alignment: Alignment.center,
       child: Text(
         number.toString(),
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
       ),
-    );
-  }
-}
-
-class _PinMarker extends StatelessWidget {
-  const _PinMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: AppTheme.navy,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 1))],
-          ),
-        ),
-        Container(
-          width: 4,
-          height: 8,
-          decoration: BoxDecoration(color: AppTheme.navy, borderRadius: BorderRadius.circular(2)),
-        ),
-      ],
     );
   }
 }

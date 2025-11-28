@@ -95,7 +95,8 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     setState(() {
       final newDayIndex = days.length;
       days.add(ItineraryDay(dayNumber: days.length + 1));
-      _expandedDays[newDayIndex] = false;
+      // Auto-expand the newly added day for quicker editing
+      _expandedDays[newDayIndex] = true;
     });
     // Auto-select and scroll to the newly added day
     setState(() => selectedDayIndex = days.length - 1);
@@ -281,17 +282,26 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
       days: manualDays,
     );
 
-    // Save to SavedTripsStore
-    SavedTripsStore.add(SavedTrip(
+    // Save to SavedTripsStore and navigate with the saved trip as argument
+    final savedTrip = SavedTrip(
       title: _titleController.text,
       dateRange: 'Custom Trip • ${days.length} day${days.length == 1 ? '' : 's'}',
       budget: budget,
       image: days.first.destinations.isNotEmpty ? days.first.destinations.first.image : '',
       itinerary: manualItinerary,
-    ));
+    );
+    SavedTripsStore.add(savedTrip);
 
-    // Navigate to TripDetailScreen
-    Navigator.pushReplacementNamed(context, TripDetailScreen.route);
+    // Navigate to TripDetailScreen with trip data so summary is populated
+    Navigator.pushReplacementNamed(
+      context,
+      TripDetailScreen.route,
+      arguments: {
+        'trip': savedTrip,
+        'initialView': 'List',
+        'initialDay': 'Day ${days.length}',
+      },
+    );
     
     // Show success message
     Future.delayed(const Duration(milliseconds: 500), () {
