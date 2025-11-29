@@ -229,10 +229,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ],
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: Wrap(
-                        spacing: 16,
-                        runSpacing: 12,
-                        alignment: WrapAlignment.spaceAround,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           _SummaryItem(icon: Icons.calendar_today, label: 'Duration', value: '$tripDays Day${tripDays > 1 ? 's' : ''}', isDark: isDark),
                           _SummaryItem(icon: Icons.place, label: 'Spots', value: '$tripSpots', isDark: isDark),
@@ -471,18 +469,18 @@ class _DayChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppTheme.darkCard : Colors.white)
-              : (isDark ? const Color(0xFF1A3A47) : const Color(0xFF2D7A6E)),
-          borderRadius: BorderRadius.circular(20),
+              ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
+              : (isDark ? AppTheme.darkCard : Colors.white),
+          borderRadius: BorderRadius.circular(25),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : (isDark ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.4)),
+                : (isDark ? Colors.white24 : Colors.grey[300]!),
             width: 1.5,
           ),
         ),
@@ -490,9 +488,10 @@ class _DayChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: isSelected
-                ? (isDark ? Colors.white : AppTheme.teal)
-                : Colors.white,
+                ? Colors.white
+                : (isDark ? Colors.white : Colors.black87),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 15,
           ),
         ),
       ),
@@ -532,11 +531,15 @@ class _DayHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
+          Expanded(
+            child: Text(
+              subtitle,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

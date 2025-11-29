@@ -296,8 +296,12 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
       }
       
       String errorMessage = 'Failed to generate itinerary';
+      String technicalDetails = e.toString();
       
-      if (e.toString().contains('API key')) {
+      if (e.toString().contains('NETWORK_ERROR')) {
+        errorMessage = 'Unable to connect to AI service. Please check your internet connection and try again.';
+        technicalDetails = 'Network connection failed. Make sure you have an active internet connection.';
+      } else if (e.toString().contains('API key')) {
         errorMessage = 'Invalid API key. Please check your configuration.';
       } else if (e.toString().contains('quota')) {
         errorMessage = 'API quota exceeded. Please try again later.';
@@ -305,6 +309,9 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
         errorMessage = 'Received invalid response. Please try again.';
       } else if (e.toString().contains('Empty response')) {
         errorMessage = 'No response from AI. Please check your internet connection.';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('ClientException')) {
+        errorMessage = 'Network error occurred. Please check your internet connection.';
+        technicalDetails = 'Unable to reach the AI service. Verify your network connection.';
       }
       
       showDialog(
@@ -318,7 +325,7 @@ class _PlanFormScreenState extends State<PlanFormScreen> {
               Text(errorMessage),
               const SizedBox(height: 8),
               Text(
-                'Technical details: ${e.toString()}',
+                'Technical details: $technicalDetails',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],

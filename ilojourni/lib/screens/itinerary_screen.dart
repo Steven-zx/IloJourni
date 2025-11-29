@@ -147,7 +147,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                   _PlaceCard(
                                     number: number ?? 0,
                                     title: activity.name,
-                                    image: activity.image ?? 'assets/images/jaroCathedral.jpg',
+                                    image: activity.image ?? _getDefaultImage(activity),
                                     imageColor: _getActivityColor(activity.type),
                                     description: activity.description,
                                     time: activity.time,
@@ -230,6 +230,23 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       default:
         return const Color(0xFF2C3E50);
     }
+  }
+
+  String _getDefaultImage(Activity activity) {
+    if (activity.type == 'meal') {
+      final nameLower = activity.name.toLowerCase();
+      if (nameLower.contains('breakfast')) {
+        return 'assets/images/breakfast.jpg';
+      } else if (nameLower.contains('dinner')) {
+        return 'assets/images/dinner.jpg';
+      } else if (nameLower.contains('coffee') || nameLower.contains('snack')) {
+        return 'assets/images/coffee.jpg';
+      } else if (nameLower.contains('lunch')) {
+        return 'assets/images/dinner.jpg'; // Use dinner image for lunch
+      }
+      return 'assets/images/breakfast.jpg'; // Default for other meals
+    }
+    return 'assets/images/jaroCathedral.jpg'; // Default for destinations
   }
 
   String _generateDateRange(int days) {
@@ -364,8 +381,6 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final imageHeight = screenWidth <= 360 ? 120.0 : 140.0;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -383,11 +398,15 @@ class _DayHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
+          Expanded(
+            child: Text(
+              subtitle,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

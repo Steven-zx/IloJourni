@@ -92,6 +92,15 @@ class GeminiService {
         lastError = e is Exception ? e : Exception(e.toString());
         // print('❌ Error on attempt $attempts: $e');
         
+        // Check for network errors
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('socketexception') || 
+            errorStr.contains('no address associated') ||
+            errorStr.contains('network is unreachable') ||
+            errorStr.contains('failed host lookup')) {
+          throw Exception('NETWORK_ERROR: Unable to connect to AI service. Please check your internet connection.');
+        }
+        
         // Don't retry for certain errors
         if (e.toString().contains('API key') || e.toString().contains('quota')) {
           throw Exception('API Error: $e');
@@ -144,10 +153,10 @@ CRITICAL PLANNING RULES:
 5. **Transportation**: Add transport activities between locations (10-45 mins typically)
 6. **Budget smart**: Total cost should be 90-100% of budget. Don't go over!
 7. **Activity mix**: Balance based on travel styles - if "Foodie" is selected, include more food stops
-8. **Opening hours**: Respect the openingHours in destination data
-9. **Pacing**: Keep it simple! For ${days} days = ${days * 4}-${days * 5} activities MAXIMUM
-10. **Image paths**: Use the exact "image" field from destination JSON
-11. **BE CONCISE**: Keep descriptions SHORT (1 sentence max) to avoid truncation
+10. **Opening hours**: Respect the openingHours in destination data
+11. **Pacing**: Keep it simple! For ${days} days = ${days * 4}-${days * 5} activities MAXIMUM
+12. **Image paths**: Use the exact "image" field from destination JSON. For meals: use "assets/images/breakfast.jpg" for breakfast, "assets/images/dinner.jpg" for lunch/dinner, "assets/images/coffee.jpg" for snacks/coffee
+13. **BE CONCISE**: Keep descriptions SHORT (1 sentence max) to avoid truncation
 
 OUTPUT FORMAT (MUST BE VALID JSON):
 {
@@ -183,13 +192,13 @@ OUTPUT FORMAT (MUST BE VALID JSON):
         },
         {
           "type": "meal",
-          "name": "Lunch at <restaurant from JSON or generic>",
+          "name": "Breakfast/Lunch/Dinner at <restaurant from JSON or generic>",
           "description": "<what to eat>",
           "time": "12:00 PM - 1:00 PM",
           "cost": <realistic meal cost>,
           "location": "<area>",
           "tags": ["Foodie"],
-          "image": "<if restaurant in JSON, use its image>"
+          "image": "assets/images/breakfast.jpg for breakfast, assets/images/dinner.jpg for lunch/dinner, assets/images/coffee.jpg for snacks"
         }
       ]
     }

@@ -137,47 +137,6 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     });
   }
 
-  void _showBudgetDialog() async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        final controller = TextEditingController(text: _budgetController.text);
-        return AlertDialog(
-          title: const Text('Set Budget'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              prefixText: 'P ',
-              hintText: 'Enter budget amount',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.teal,
-              ),
-              child: const Text('Set'),
-            ),
-          ],
-        );
-      },
-    );
-    
-    if (result != null) {
-      setState(() {
-        _budgetController.text = result;
-      });
-    }
-  }
-
   int _getTotalDestinations() {
     return days.fold(0, (sum, day) => sum + day.destinations.length);
   }
@@ -321,7 +280,6 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final totalDestinations = _getTotalDestinations();
-    final budget = int.tryParse(_budgetController.text) ?? 0;
     final totalCost = _computeTotalCost();
 
     // Screen width can be used for future responsive adjustments
@@ -392,19 +350,30 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Stats row
+                  // Summary stats
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                    child: Row(
-                      children: [
-                        Expanded(child: _StatBadge(icon: Icons.event, value: '${days.length}', label: 'days', isDark: isDark)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatBadge(icon: Icons.place, value: '$totalDestinations', label: 'stops', isDark: isDark)),
-                        const SizedBox(width: 12),
-                        Expanded(child: GestureDetector(onTap: () => _showBudgetDialog(), child: _StatBadge(icon: Icons.account_balance_wallet, value: 'P$budget', label: 'budget', isDark: isDark))),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatBadge(icon: Icons.payments, value: 'P$totalCost', label: 'cost', isDark: isDark)),
-                      ],
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? AppTheme.darkCard : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark ? Colors.black26 : Colors.black12,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _StatBadge(icon: Icons.calendar_today, value: '${days.length} Day${days.length > 1 ? 's' : ''}', label: 'Duration', isDark: isDark),
+                          _StatBadge(icon: Icons.place, value: '$totalDestinations', label: 'Spots', isDark: isDark),
+                          _StatBadge(icon: Icons.payments, value: '₱$totalCost', label: 'Total Cost', isDark: isDark),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -539,51 +508,28 @@ class _StatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black26 : Colors.black12,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: isDark ? AppTheme.darkTeal : AppTheme.teal, size: 22),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.white60 : Colors.grey[600],
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isDark ? AppTheme.darkTeal : AppTheme.teal,
-            size: 18,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: isDark ? Colors.white : Colors.black87,
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isDark ? Colors.white54 : Colors.grey[600],
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -600,25 +546,29 @@ class _DayChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
               : (isDark ? AppTheme.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected 
-                ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
-                : (isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade300),
+            color: isSelected
+                ? Colors.transparent
+                : (isDark ? Colors.white24 : Colors.grey[300]!),
+            width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.white : Colors.black87),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 15,
           ),
         ),
       ),

@@ -237,16 +237,16 @@ class _BannerCarousel extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Image.asset(
-        'assets/images/dinagyangBanner.png',
+        'assets/images/cokeAd.png',
         height: 140,
         width: double.infinity,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => Container(
           height: 140,
           width: double.infinity,
-          color: const Color(0xFF4E0D0D),
+          color: const Color(0xFFCC2027),
           alignment: Alignment.center,
-          child: const Text('Dinagyang Banner', style: TextStyle(color: Colors.white)),
+          child: const Text('Coke Ad', style: TextStyle(color: Colors.white)),
         ),
       ),
     );

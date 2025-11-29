@@ -18,6 +18,8 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
   int _spentBudget = 0;
   String _selectedDay = 'All';
   GeneratedItinerary? _itinerary;
+  String _tripName = 'Trip Name';
+  bool _isManualBudget = false;
 
   final List<BudgetItem> _items = [];
 
@@ -25,12 +27,28 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      final GeneratedItinerary? itin = args?['itinerary'] as GeneratedItinerary?;
-      if (itin != null) {
-        _bindItinerary(itin);
+      final args = ModalRoute.of(context)?.settings.arguments;
+      
+      SavedTrip? trip;
+      if (args is SavedTrip) {
+        trip = args;
+      } else if (args is Map) {
+        trip = args['trip'] as SavedTrip?;
+      }
+      
+      if (trip != null) {
+        setState(() {
+          _tripName = trip!.title;
+          _isManualBudget = trip.budget == 0 || trip.itinerary.totalBudget == 0;
+        });
+        _bindItinerary(trip.itinerary);
       } else if (SavedTripsStore.instance.trips.isNotEmpty) {
-        _bindItinerary(SavedTripsStore.instance.trips.last.itinerary);
+        final lastTrip = SavedTripsStore.instance.trips.last;
+        setState(() {
+          _tripName = lastTrip.title;
+          _isManualBudget = lastTrip.budget == 0 || lastTrip.itinerary.totalBudget == 0;
+        });
+        _bindItinerary(lastTrip.itinerary);
       }
     });
   }
@@ -38,8 +56,14 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
   void _bindItinerary(GeneratedItinerary itin) {
     setState(() {
       _itinerary = itin;
-      _totalBudget = itin.totalBudget;
-      _plannedBudget = itin.totalCost;
+      // For AI trips, use totalBudget if set, otherwise use totalCost as both budget and planned
+      if (_isManualBudget) {
+        _totalBudget = 0; // Manual trips need to set budget manually
+        _plannedBudget = itin.totalCost;
+      } else {
+        _totalBudget = itin.totalBudget > 0 ? itin.totalBudget : itin.totalCost;
+        _plannedBudget = itin.totalCost;
+      }
       _items.clear();
       for (final day in itin.days) {
         for (final a in day.activities) {
@@ -69,9 +93,80 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
   int get _remainingBudget => _totalBudget - _spentBudget;
   double get _progressPercent => _totalBudget == 0 ? 0 : (_spentBudget / _totalBudget).clamp(0.0, 1.0);
 
+  int get _calculatedSpent => _items.where((i) => i.isChecked).fold(0, (sum, i) => sum + i.amount);
+
   List<BudgetItem> get _filteredItems {
     if (_selectedDay == 'All') return _items;
     return _items.where((i) => i.day == _selectedDay).toList();
+  }
+
+  void _toggleItem(BudgetItem item) {
+    setState(() {
+      item.isChecked = !item.isChecked;
+      _spentBudget = _calculatedSpent;
+
+      // Reorder: keep unchecked items at the top, move checked to bottom
+      final dayLabel = item.day;
+      final sameDayItems = _items.where((i) => i.day == dayLabel).toList();
+      final otherItems = _items.where((i) => i.day != dayLabel).toList();
+      final unchecked = sameDayItems.where((i) => !i.isChecked).toList();
+      final checked = sameDayItems.where((i) => i.isChecked).toList();
+      _items
+        ..clear()
+        ..addAll(unchecked)
+        ..addAll(checked)
+        ..addAll(otherItems);
+    });
+  }
+
+  void _showBudgetDialog() async {
+    final controller = TextEditingController(text: _totalBudget.toString());
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? AppTheme.darkCard : Colors.white,
+          title: Text('Set Budget', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            autofocus: true,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
+              hintText: 'Enter budget',
+              prefixText: '₱ ',
+              filled: true,
+              fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.grey[100],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final amount = int.tryParse(controller.text.trim());
+                if (amount != null && amount > 0) {
+                  Navigator.pop(context, amount);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: isDark ? AppTheme.darkTeal : AppTheme.teal),
+              child: const Text('Set'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result != null) {
+      setState(() => _totalBudget = result);
+    }
   }
 
   void _addExpense() async {
@@ -116,18 +211,26 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
                         ),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Trip Name',
-                            style: TextStyle(
+                            _tripName,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 48),
+                        if (_isManualBudget)
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                            onPressed: _showBudgetDialog,
+                          )
+                        else
+                          const SizedBox(width: 48),
                       ],
                     ),
                   ),
@@ -299,15 +402,24 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
               itemCount: _filteredItems.length,
               itemBuilder: (context, index) {
                 final item = _filteredItems[index];
+                int displayNumber = index + 1;
                 if (item.type == 'transportation') {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _RideCard(line: item.title, details: item.details, isDark: isDark),
+                    child: _RideCard(item: item, isDark: isDark, onToggle: () => _toggleItem(item)),
                   );
                 }
+                // Count only non-transport items for numbering
+                final nonTransportItems = _filteredItems.where((i) => i.type != 'transportation').toList();
+                displayNumber = nonTransportItems.indexOf(item) + 1;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _BudgetItemCard(number: index + 1, title: item.title, location: item.details, isDark: isDark),
+                  child: _BudgetItemCard(
+                    number: displayNumber,
+                    item: item,
+                    isDark: isDark,
+                    onToggle: () => _toggleItem(item),
+                  ),
                 );
               },
             ),
@@ -391,14 +503,14 @@ class _DayChip extends StatelessWidget {
 
 class _RideCard extends StatelessWidget {
   const _RideCard({
-    required this.line,
-    required this.details,
+    required this.item,
     required this.isDark,
+    required this.onToggle,
   });
 
-  final String line;
-  final String details;
+  final BudgetItem item;
   final bool isDark;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -424,8 +536,9 @@ class _RideCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.directions_car,
+              Icons.directions_bus,
               color: isDark ? AppTheme.darkTeal : AppTheme.teal,
+              size: 18,
             ),
           ),
           const SizedBox(width: 12),
@@ -434,7 +547,7 @@ class _RideCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  line,
+                  item.title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -443,7 +556,7 @@ class _RideCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  details,
+                  item.details,
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.white60 : Colors.grey[600],
@@ -451,6 +564,33 @@ class _RideCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          if (item.amount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 16,
+                    color: isDark ? Colors.white54 : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '₱${item.amount}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Checkbox(
+            value: item.isChecked,
+            onChanged: (_) => onToggle(),
+            activeColor: isDark ? AppTheme.darkTeal : AppTheme.teal,
           ),
         ],
       ),
@@ -461,15 +601,15 @@ class _RideCard extends StatelessWidget {
 class _BudgetItemCard extends StatelessWidget {
   const _BudgetItemCard({
     required this.number,
-    required this.title,
-    required this.location,
+    required this.item,
     required this.isDark,
+    required this.onToggle,
   });
 
   final int number;
-  final String title;
-  final String location;
+  final BudgetItem item;
   final bool isDark;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -510,13 +650,43 @@ class _BudgetItemCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black87,
+                          decoration: item.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (item.amount > 0)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline,
+                            size: 16,
+                            color: isDark ? Colors.white54 : Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '₱${item.amount}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              decoration: item.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -527,11 +697,15 @@ class _BudgetItemCard extends StatelessWidget {
                       color: isDark ? Colors.white54 : Colors.grey[600],
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      location,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white60 : Colors.grey[600],
+                    Expanded(
+                      child: Text(
+                        item.details,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : Colors.grey[600],
+                          decoration: item.isChecked ? TextDecoration.lineThrough : TextDecoration.none,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -540,8 +714,8 @@ class _BudgetItemCard extends StatelessWidget {
             ),
           ),
           Checkbox(
-            value: false,
-            onChanged: (value) {},
+            value: item.isChecked,
+            onChanged: (_) => onToggle(),
             activeColor: isDark ? AppTheme.darkTeal : AppTheme.teal,
           ),
         ],
@@ -674,6 +848,7 @@ class BudgetItem {
   final String title;
   final String details;
   final int amount;
+  bool isChecked;
 
   BudgetItem({
     required this.day,
@@ -681,5 +856,6 @@ class BudgetItem {
     required this.title,
     required this.details,
     required this.amount,
+    this.isChecked = false,
   });
 }

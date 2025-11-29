@@ -20,11 +20,24 @@ class TripMapView extends StatelessWidget {
       for (final day in itinerary!.days) {
         for (final act in day.activities) {
           if (act.type.toLowerCase() == 'transport') continue;
-          final dest = destinations.cast<Destination?>().firstWhere(
-            (d) => d?.name.toLowerCase() == act.name.toLowerCase(),
-            orElse: () => null,
+          final dest = destinations.firstWhere(
+            (d) => d.name.toLowerCase() == act.name.toLowerCase(),
+            orElse: () => Destination(
+              id: '',
+              name: '',
+              description: '',
+              district: '',
+              category: '',
+              latitude: 0,
+              longitude: 0,
+              image: '',
+              entranceFee: 0,
+              estimatedTime: '',
+              tags: const [],
+              openingHours: '',
+            ),
           );
-          if (dest != null) {
+          if (dest.name.isNotEmpty) {
             number++;
             points.add(MapEntry(LatLng(dest.latitude, dest.longitude), number));
           }
@@ -35,11 +48,24 @@ class TripMapView extends StatelessWidget {
       final day = itinerary!.days.firstWhere((d) => d.dayNumber == dayNumber, orElse: () => itinerary!.days.first);
       for (final act in day.activities) {
         if (act.type.toLowerCase() == 'transport') continue;
-        final dest = destinations.cast<Destination?>().firstWhere(
-          (d) => d?.name.toLowerCase() == act.name.toLowerCase(),
-          orElse: () => null,
+        final dest = destinations.firstWhere(
+          (d) => d.name.toLowerCase() == act.name.toLowerCase(),
+          orElse: () => Destination(
+            id: '',
+            name: '',
+            description: '',
+            district: '',
+            category: '',
+            latitude: 0,
+            longitude: 0,
+            image: '',
+            entranceFee: 0,
+            estimatedTime: '',
+            tags: const [],
+            openingHours: '',
+          ),
         );
-        if (dest != null) {
+        if (dest.name.isNotEmpty) {
           number++;
           points.add(MapEntry(LatLng(dest.latitude, dest.longitude), number));
         }
