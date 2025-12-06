@@ -71,8 +71,9 @@ class _ManualItineraryScreenState extends State<ManualItineraryScreen> {
     const inner = ['iloilo city', 'mandurriao', 'la paz', 'molo', 'city proper', 'jaro'];
     final isInner = inner.contains(f) && inner.contains(t);
     if (isInner) return 15;
-    if ((f.contains('san joaquin') || f.contains('miag')) || (t.contains('san joaquin') || t.contains('miag')))
+    if ((f.contains('san joaquin') || f.contains('miag')) || (t.contains('san joaquin') || t.contains('miag'))) {
       return 50;
+    }
     return 30;
   }
   void _addDestinationToDay(DestinationItem destination) {

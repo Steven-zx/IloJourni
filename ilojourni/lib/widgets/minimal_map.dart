@@ -30,9 +30,11 @@ class MinimalMap extends StatelessWidget {
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.ilojourni.app',
-          keepBuffer: 1,
-          panBuffer: 0,
+          userAgentPackageName: 'com.example.ilojourni',
+          keepBuffer: 2,
+          panBuffer: 1,
+          maxNativeZoom: 19,
+          maxZoom: 19,
           tileBuilder: (context, widget, tile) => ColorFiltered(
             colorFilter: const ColorFilter.matrix(<double>[
               0.2126, 0.7152, 0.0722, 0, 0,

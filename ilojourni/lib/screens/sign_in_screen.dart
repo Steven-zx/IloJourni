@@ -102,7 +102,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: TextField(
                   controller: _emailCtrl,
@@ -112,7 +112,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: TextField(
                   controller: _pwdCtrl,

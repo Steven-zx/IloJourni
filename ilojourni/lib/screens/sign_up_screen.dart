@@ -105,7 +105,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: Theme.of(context).textTheme.headlineMedium ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: TextField(
                   controller: _nameCtrl,
@@ -114,7 +114,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: TextField(
                   controller: _emailCtrl,
@@ -124,7 +124,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: TextField(
                   controller: _pwdCtrl,

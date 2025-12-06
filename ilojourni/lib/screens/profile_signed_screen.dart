@@ -364,7 +364,7 @@ class _AppearanceRowState extends State<_AppearanceRow> {
               setState(() {});
             },
             activeTrackColor: AppTheme.darkAccent,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
           ),
         ],
       ),

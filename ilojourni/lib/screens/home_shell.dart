@@ -4,7 +4,6 @@ import '../widgets/offline_banner.dart';
 import 'dashboard_screen.dart';
 import 'explore_screen.dart';
 import 'saved_trips_screen.dart';
-import 'favorites_screen.dart';
 import 'profile_guest_screen.dart';
 import 'profile_signed_screen.dart';
 

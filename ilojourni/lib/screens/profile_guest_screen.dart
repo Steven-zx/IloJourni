@@ -90,7 +90,7 @@ class _ProfileGuestScreenState extends State<ProfileGuestScreen> {
                       _themeService.toggleTheme();
                       setState(() {});
                     },
-                    activeColor: AppTheme.darkAccent,
+                    activeThumbColor: AppTheme.darkAccent,
                   )
                 ]),
               ),

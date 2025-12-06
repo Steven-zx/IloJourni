@@ -246,8 +246,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           // Day filter chips and content
           if (_selectedView == 'List') ...[
             Container(
-              height: 50,
-              margin: const EdgeInsets.only(bottom: 16),
+              height: 40,
+              margin: const EdgeInsets.only(top: 8, bottom: 16),
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -283,8 +283,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           else ...[
             // Map View
             Container(
-              height: 50,
-              margin: const EdgeInsets.only(bottom: 16),
+              height: 40,
+              margin: const EdgeInsets.only(top: 8, bottom: 16),
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -469,14 +469,14 @@ class _DayChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? AppTheme.darkTeal : AppTheme.teal)
               : (isDark ? AppTheme.darkCard : Colors.white),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
@@ -491,7 +491,7 @@ class _DayChip extends StatelessWidget {
                 ? Colors.white
                 : (isDark ? Colors.white : Colors.black87),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 15,
+            fontSize: 14,
           ),
         ),
       ),

@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 
 class _TripMapView extends StatelessWidget {
   final GeneratedItinerary? itinerary;
-  const _TripMapView({Key? key, required this.itinerary}) : super(key: key);
+  const _TripMapView({super.key, required this.itinerary});
 
   List<LatLng> get _waypoints {
     if (itinerary == null) return [];

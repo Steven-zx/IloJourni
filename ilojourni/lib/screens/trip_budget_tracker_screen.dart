@@ -65,6 +65,7 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
         _plannedBudget = itin.totalCost;
       }
       _items.clear();
+      int activityNumber = 0;
       for (final day in itin.days) {
         for (final a in day.activities) {
           if (a.type == 'transport') {
@@ -74,14 +75,19 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
               title: a.name,
               details: '${a.description}   Fare: ₱${a.cost}',
               amount: a.cost,
+              activityNumber: 0,
+              location: a.location,
             ));
           } else {
+            activityNumber++;
             _items.add(BudgetItem(
               day: 'Day ${day.dayNumber}',
               type: 'activity',
               title: a.name,
               details: a.location ?? '',
               amount: a.cost,
+              activityNumber: activityNumber,
+              location: a.location,
             ));
           }
         }
@@ -366,8 +372,8 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
                   ),
                   // Day filter chips
                   Container(
-                    height: 50,
-                    margin: const EdgeInsets.only(bottom: 16),
+                    height: 40,
+                    margin: const EdgeInsets.only(top: 8, bottom: 16),
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -402,20 +408,17 @@ class _TripBudgetTrackerScreenState extends State<TripBudgetTrackerScreen> {
               itemCount: _filteredItems.length,
               itemBuilder: (context, index) {
                 final item = _filteredItems[index];
-                int displayNumber = index + 1;
                 if (item.type == 'transportation') {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _RideCard(item: item, isDark: isDark, onToggle: () => _toggleItem(item)),
                   );
                 }
-                // Count only non-transport items for numbering
-                final nonTransportItems = _filteredItems.where((i) => i.type != 'transportation').toList();
-                displayNumber = nonTransportItems.indexOf(item) + 1;
+                // Use the activityNumber from the item (synced with itinerary)
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _BudgetItemCard(
-                    number: displayNumber,
+                    number: item.activityNumber,
                     item: item,
                     isDark: isDark,
                     onToggle: () => _toggleItem(item),
@@ -474,7 +477,7 @@ class _DayChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? AppTheme.darkCard : Colors.white)
@@ -494,6 +497,7 @@ class _DayChip extends StatelessWidget {
                 ? (isDark ? Colors.white : AppTheme.teal)
                 : Colors.white,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 14,
           ),
         ),
       ),
@@ -848,6 +852,8 @@ class BudgetItem {
   final String title;
   final String details;
   final int amount;
+  final int activityNumber;
+  final String? location;
   bool isChecked;
 
   BudgetItem({
@@ -856,6 +862,8 @@ class BudgetItem {
     required this.title,
     required this.details,
     required this.amount,
+    required this.activityNumber,
+    this.location,
     this.isChecked = false,
   });
 }

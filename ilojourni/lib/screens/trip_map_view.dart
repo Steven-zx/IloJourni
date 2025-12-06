@@ -9,7 +9,7 @@ class TripMapView extends StatelessWidget {
   final GeneratedItinerary? itinerary;
   final List<Destination> destinations;
   final String selectedDay;
-  const TripMapView({Key? key, required this.itinerary, required this.destinations, this.selectedDay = 'All'}) : super(key: key);
+  const TripMapView({super.key, required this.itinerary, required this.destinations, this.selectedDay = 'All'});
 
   List<MapEntry<LatLng, int>> get _numberedWaypoints {
     if (itinerary == null) return [];
@@ -96,7 +96,7 @@ class TripMapView extends StatelessWidget {
 
 class NumberedMarker extends StatelessWidget {
   final int number;
-  const NumberedMarker({required this.number});
+  const NumberedMarker({super.key, required this.number});
 
   @override
   Widget build(BuildContext context) {

@@ -154,7 +154,7 @@ CRITICAL PLANNING RULES:
 6. **Budget smart**: Total cost should be 90-100% of budget. Don't go over!
 7. **Activity mix**: Balance based on travel styles - if "Foodie" is selected, include more food stops
 10. **Opening hours**: Respect the openingHours in destination data
-11. **Pacing**: Keep it simple! For ${days} days = ${days * 4}-${days * 5} activities MAXIMUM
+11. **Pacing**: Keep it simple! For $days days = ${days * 4}-${days * 5} activities MAXIMUM
 12. **Image paths**: Use the exact "image" field from destination JSON. For meals: use "assets/images/breakfast.jpg" for breakfast, "assets/images/dinner.jpg" for lunch/dinner, "assets/images/coffee.jpg" for snacks/coffee
 13. **BE CONCISE**: Keep descriptions SHORT (1 sentence max) to avoid truncation
 
@@ -221,7 +221,7 @@ REMEMBER:
 - All costs must be realistic integers
 - Times must be sequential and realistic
 - Use actual destination data - don't make up places!
-- COMPLETE ALL ${days} DAYS - don't stop mid-response
+- COMPLETE ALL $days DAYS - don't stop mid-response
 ''';
   }
 

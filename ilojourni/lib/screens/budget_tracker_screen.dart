@@ -362,11 +362,11 @@ class _BudgetTrackerScreenState extends State<BudgetTrackerScreen> {
                       ),
                     );
                   }
-                }).toList(),
+                }),
                 const SizedBox(height: 12),
               ],
             );
-          }).toList(),
+          }),
         ],
       ),
     );

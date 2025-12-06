@@ -159,11 +159,11 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                   const SizedBox(height: 12),
                                 ],
                               );
-                            }).toList(),
+                            }),
                             const SizedBox(height: 8),
                           ],
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),
